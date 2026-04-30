@@ -137,7 +137,7 @@ app.use(errorHandler);
 
 // ── Server startup ──
 const server = app.listen(PORT, () => {
-  console.log(
+  console.error(
     JSON.stringify({
       level: 'info',
       event: 'server_start',
@@ -146,16 +146,16 @@ const server = app.listen(PORT, () => {
     })
   );
   if (!isProd) {
-    console.log(`  API  → http://localhost:${PORT}/api/health`);
-    console.log(`  App  → http://localhost:5173`);
+    console.error(`  API  → http://localhost:${PORT}/api/health`);
+    console.error(`  App  → http://localhost:5173`);
   }
 });
 
 // ── Graceful shutdown ──
 function shutdown(signal) {
-  console.log(JSON.stringify({ level: 'info', event: 'shutdown', signal }));
+  console.error(JSON.stringify({ level: 'info', event: 'shutdown', signal }));
   server.close(() => {
-    console.log(JSON.stringify({ level: 'info', event: 'shutdown_complete' }));
+    console.error(JSON.stringify({ level: 'info', event: 'shutdown_complete' }));
     process.exit(0);
   });
   // Force exit after 10s if connections don't drain

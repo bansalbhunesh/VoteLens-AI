@@ -6,7 +6,7 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { streamSimulation } from '../utils/api';
 import { SIMULATION_STEPS } from '../utils/constants';
 
-const VVPAT_DISPLAY_MS = 7000;
+const _VVPAT_DISPLAY_MS = 7000; // kept for reference — runtime uses a 1s interval counting to 7
 
 export function useSimulation() {
   const [currentStep, setCurrentStep] = useState(0); // 0 = not started

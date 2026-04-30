@@ -40,7 +40,7 @@ function useCountUp(target, duration = 900) {
   const [count, setCount] = useState(0);
   const raf = useRef(null);
   useEffect(() => {
-    setCount(0);
+    cancelAnimationFrame(raf.current);
     const start = performance.now();
     const step = (now) => {
       const progress = Math.min((now - start) / duration, 1);
@@ -72,39 +72,18 @@ export default function Quiz() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [quizHistory, setQuizHistory] = useState(() => loadHistory());
-  const prevLastRef = useRef(null); // score from the previous attempt on this topic
+  const [prevLast, setPrevLast] = useState(null); // last score on this topic before current attempt
 
   const score = Object.entries(answers).filter(
     ([i, ans]) => questions[parseInt(i)]?.correct === ans
   ).length;
 
-  // Keyboard shortcuts during quiz phase
-  const handleKeyDown = useCallback(
-    (e) => {
-      if (phase !== 'quiz') return;
-      const optionKeys = ['a', 'b', 'c', 'd'];
-      const key = e.key.toLowerCase();
-      if (!revealed && optionKeys.includes(key)) {
-        const upper = key.toUpperCase();
-        if (questions[currentQ]?.options[upper] !== undefined) handleAnswer(upper);
-      }
-      if (revealed && (e.key === 'Enter' || e.key === 'ArrowRight')) handleNext();
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [phase, revealed, currentQ, questions]
-  );
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [handleKeyDown]);
-
   const handleTopicSelect = async (topic) => {
     setSelectedTopic(topic);
     setPhase('loading');
     setError('');
-    // Capture previous last score before this attempt is saved
-    prevLastRef.current = quizHistory[topic.id]?.last ?? null;
+    // Capture previous last score as state before this attempt is saved
+    setPrevLast(quizHistory[topic.id]?.last ?? null);
     try {
       const qs = await generateQuiz(topic.id);
       setQuestions(qs);
@@ -118,23 +97,42 @@ export default function Quiz() {
     }
   };
 
-  const handleAnswer = (option) => {
+  const handleAnswer = useCallback((option) => {
     if (revealed) return;
     setAnswers((prev) => ({ ...prev, [currentQ]: option }));
     setRevealed(true);
-  };
+  }, [revealed, currentQ]);
 
-  const handleNext = () => {
+  const handleNext = useCallback(() => {
     if (currentQ < questions.length - 1) {
       setCurrentQ((q) => q + 1);
       setRevealed(false);
     } else {
-      // Save score before transitioning so results screen has fresh history
       const newHistory = saveScore(selectedTopic.id, score, questions.length);
       setQuizHistory(newHistory);
       setPhase('results');
     }
-  };
+  }, [currentQ, questions.length, selectedTopic, score]);
+
+  // Keyboard shortcuts — declared after handleAnswer/handleNext so closures capture them
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (phase !== 'quiz') return;
+      const optionKeys = ['a', 'b', 'c', 'd'];
+      const key = e.key.toLowerCase();
+      if (!revealed && optionKeys.includes(key)) {
+        const upper = key.toUpperCase();
+        if (questions[currentQ]?.options[upper] !== undefined) handleAnswer(upper);
+      }
+      if (revealed && (e.key === 'Enter' || e.key === 'ArrowRight')) handleNext();
+    },
+    [phase, revealed, currentQ, questions, handleAnswer, handleNext]
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const handleRetry = () => {
     setPhase('select');
@@ -162,8 +160,7 @@ export default function Quiz() {
     }
   };
 
-  // Trend compared to previous attempt (computed after saving)
-  const prevLast = prevLastRef.current;
+  // Trend compared to previous attempt
   const trend = prevLast !== null
     ? score > prevLast ? 'improved' : score < prevLast ? 'lower' : 'same'
     : null;

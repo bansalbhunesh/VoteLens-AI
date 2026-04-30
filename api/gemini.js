@@ -94,7 +94,7 @@ export async function analyzeImage(imageBuffer, mimeType, userPrompt = '') {
     ? `${userPrompt}\n\nAnalyze the uploaded image with this context in mind.`
     : 'Analyze this image related to the Indian election process.';
 
-  const response = await withRetries((signal) => client.models.generateContent({
+  const response = await withRetries((_signal) => client.models.generateContent({
     model: MODEL,
     contents: [
       {

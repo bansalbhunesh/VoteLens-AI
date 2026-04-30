@@ -1,3 +1,5 @@
+/* eslint-disable react-refresh/only-export-components */
+
 /** Handles inline bold, italic, code within a single line. */
 export function parseLine(text) {
   const parts = text.split(/(\*\*.*?\*\*|\*.*?\*|`.*?`)/g);

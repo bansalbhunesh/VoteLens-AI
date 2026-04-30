@@ -15,13 +15,9 @@ const SpeechRecognition =
 export function useVoice() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState('');
-  const [isSupported, setIsSupported] = useState(false);
+  const isSupported = !!SpeechRecognition;
 
   const recognitionRef = useRef(null);
-
-  useEffect(() => {
-    setIsSupported(!!SpeechRecognition);
-  }, []);
 
   /**
    * Start listening for voice input.

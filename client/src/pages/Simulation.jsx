@@ -3,7 +3,7 @@ import { useSimulation } from '../hooks/useSimulation';
 import SimulationStage from '../components/SimulationStage';
 import MarkdownText from '../components/MarkdownText';
 import { SIMULATION_STEPS } from '../utils/constants';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 
 export default function Simulation() {
   const {
