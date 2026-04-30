@@ -6,6 +6,8 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { streamSimulation } from '../utils/api';
 import { SIMULATION_STEPS } from '../utils/constants';
 
+const VVPAT_DISPLAY_MS = 7000;
+
 export function useSimulation() {
   const [currentStep, setCurrentStep] = useState(0); // 0 = not started
   const [narration, setNarration] = useState('');
@@ -14,14 +16,15 @@ export function useSimulation() {
   const [hasVoted, setHasVoted] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showVVPAT, setShowVVPAT] = useState(false);
+  const [vvpatSecondsLeft, setVvpatSecondsLeft] = useState(0);
   const abortControllerRef = useRef(null);
+  const vvpatTimerRef = useRef(null);
 
   // Cleanup on unmount
   useEffect(() => {
     return () => {
-      if (abortControllerRef.current) {
-        abortControllerRef.current.abort();
-      }
+      abortControllerRef.current?.abort();
+      clearInterval(vvpatTimerRef.current);
     };
   }, []);
 
@@ -103,17 +106,30 @@ export function useSimulation() {
   const castVote = useCallback((candidate) => {
     setSelectedCandidate(candidate);
     setHasVoted(true);
-    // Trigger VVPAT after a short delay
-    setTimeout(() => setShowVVPAT(true), 800);
+
+    // Show VVPAT after brief EVM confirmation delay, then count down 7 seconds
+    setTimeout(() => {
+      setShowVVPAT(true);
+      setVvpatSecondsLeft(7);
+
+      let remaining = 7;
+      vvpatTimerRef.current = setInterval(() => {
+        remaining -= 1;
+        setVvpatSecondsLeft(remaining);
+        if (remaining <= 0) {
+          clearInterval(vvpatTimerRef.current);
+          setShowVVPAT(false);
+        }
+      }, 1000);
+    }, 800);
   }, []);
 
   /**
    * Reset everything.
    */
   const resetSimulation = useCallback(() => {
-    if (abortControllerRef.current) {
-      abortControllerRef.current.abort();
-    }
+    abortControllerRef.current?.abort();
+    clearInterval(vvpatTimerRef.current);
     setCurrentStep(0);
     setNarration('');
     setIsNarrating(false);
@@ -121,6 +137,7 @@ export function useSimulation() {
     setHasVoted(false);
     setSelectedCandidate(null);
     setShowVVPAT(false);
+    setVvpatSecondsLeft(0);
   }, []);
 
   return {
@@ -131,6 +148,7 @@ export function useSimulation() {
     hasVoted,
     selectedCandidate,
     showVVPAT,
+    vvpatSecondsLeft,
     totalSteps,
     startSimulation,
     fetchNarration,
@@ -138,6 +156,5 @@ export function useSimulation() {
     prevStep,
     castVote,
     resetSimulation,
-    setShowVVPAT,
   };
 }

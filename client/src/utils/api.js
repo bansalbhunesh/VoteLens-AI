@@ -80,6 +80,26 @@ export async function analyzeImage(file, prompt = '') {
 }
 
 /**
+ * Get grounded real-time election information via Google Search.
+ * @param {string} query
+ * @returns {Promise<{text: string, sources: Array}>}
+ */
+export async function getElectionInfo(query) {
+  const response = await fetch(`${API_BASE}/election-info`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ query }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Request failed' }));
+    throw new Error(err.error || 'Failed to fetch election info');
+  }
+
+  return response.json();
+}
+
+/**
  * Verify a claim about elections.
  * @param {string} claim
  * @returns {Promise<{text: string, sources: Array, searchQueries: Array}>}

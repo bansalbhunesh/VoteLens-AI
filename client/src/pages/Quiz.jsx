@@ -1,13 +1,13 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateQuiz } from '../utils/api';
 import { QUIZ_TOPICS } from '../utils/constants';
 
 const GRADES = [
-  { min: 5, label: 'Election Expert', icon: '🏆', color: 'text-accent-400', bg: 'bg-accent-500/10 border-accent-500/30' },
-  { min: 4, label: 'Informed Voter', icon: '⭐', color: 'text-primary-400', bg: 'bg-primary-500/10 border-primary-500/30' },
-  { min: 3, label: 'Good Citizen', icon: '👍', color: 'text-success-400', bg: 'bg-success-500/10 border-success-500/30' },
-  { min: 0, label: 'Keep Learning', icon: '📚', color: 'text-surface-300', bg: 'bg-surface-700/30 border-white/10' },
+  { min: 5, label: 'Election Expert',  icon: '🏆', color: 'text-accent-400',   bg: 'bg-accent-500/10 border-accent-500/30' },
+  { min: 4, label: 'Informed Voter',   icon: '⭐', color: 'text-primary-400',  bg: 'bg-primary-500/10 border-primary-500/30' },
+  { min: 3, label: 'Good Citizen',     icon: '👍', color: 'text-success-400',  bg: 'bg-success-500/10 border-success-500/30' },
+  { min: 0, label: 'Keep Learning',    icon: '📚', color: 'text-surface-300',  bg: 'bg-surface-700/30 border-white/10' },
 ];
 
 function getGrade(score) {
@@ -41,17 +41,39 @@ function ScoreDisplay({ score, total }) {
 }
 
 export default function Quiz() {
-  const [phase, setPhase] = useState('select'); // select | loading | quiz | results
+  const [phase, setPhase] = useState('select');
   const [selectedTopic, setSelectedTopic] = useState(null);
   const [questions, setQuestions] = useState([]);
   const [currentQ, setCurrentQ] = useState(0);
   const [answers, setAnswers] = useState({});
   const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
 
   const score = Object.entries(answers).filter(
     ([i, ans]) => questions[parseInt(i)]?.correct === ans
   ).length;
+
+  // Keyboard shortcuts during quiz phase
+  const handleKeyDown = useCallback(
+    (e) => {
+      if (phase !== 'quiz') return;
+      const optionKeys = ['a', 'b', 'c', 'd'];
+      const key = e.key.toLowerCase();
+      if (!revealed && optionKeys.includes(key)) {
+        const upper = key.toUpperCase();
+        if (questions[currentQ]?.options[upper] !== undefined) handleAnswer(upper);
+      }
+      if (revealed && (e.key === 'Enter' || e.key === 'ArrowRight')) handleNext();
+    },
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [phase, revealed, currentQ, questions]
+  );
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [handleKeyDown]);
 
   const handleTopicSelect = async (topic) => {
     setSelectedTopic(topic);
@@ -94,12 +116,29 @@ export default function Quiz() {
     setSelectedTopic(null);
   };
 
+  const handleShare = async () => {
+    const grade = getGrade(score);
+    const pct = Math.round((score / questions.length) * 100);
+    const text = `I scored ${score}/${questions.length} (${pct}%) on the "${selectedTopic?.label}" civic quiz — ${grade.label}! 🗳️\nTry it at VoteLens AI`;
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: 'VoteLens AI Quiz', text });
+      } else {
+        await navigator.clipboard.writeText(text);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2500);
+      }
+    } catch {
+      // user cancelled share
+    }
+  };
+
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
       <div className="mb-10">
         <h1 className="text-3xl font-light tracking-tight mb-2 text-surface-50/90">Civic Quiz</h1>
         <p className="text-sm text-surface-200/60 font-light">
-          AI-generated questions — fresh every time. Powered by Gemini JSON mode.
+          AI-generated questions — fresh every time.
         </p>
       </div>
 
@@ -115,7 +154,7 @@ export default function Quiz() {
             transition={{ duration: 0.4 }}
           >
             {error && (
-              <div className="mb-6 p-4 glass rounded-2xl border border-danger-500/30 text-danger-400 text-sm">
+              <div role="alert" className="mb-6 p-4 glass rounded-2xl border border-danger-500/30 text-danger-400 text-sm">
                 ⚠️ {error}
               </div>
             )}
@@ -149,6 +188,8 @@ export default function Quiz() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="flex flex-col items-center justify-center py-32 gap-6"
+            aria-live="polite"
+            aria-label="Generating quiz questions"
           >
             <div className="relative w-16 h-16">
               <div className="absolute inset-0 rounded-full border-4 border-white/5" />
@@ -157,7 +198,7 @@ export default function Quiz() {
             <div className="text-center">
               <div className="text-surface-200 font-medium mb-1">Generating questions…</div>
               <div className="text-xs text-surface-500">
-                Gemini is crafting fresh questions on <span className="text-primary-400">{selectedTopic?.label}</span>
+                Crafting fresh questions on <span className="text-primary-400">{selectedTopic?.label}</span>
               </div>
             </div>
           </motion.div>
@@ -174,16 +215,12 @@ export default function Quiz() {
           >
             {/* Progress */}
             <div className="flex items-center justify-between mb-6">
-              <div className="flex gap-1.5">
+              <div className="flex gap-1.5" role="progressbar" aria-valuenow={currentQ + 1} aria-valuemax={questions.length}>
                 {questions.map((_, i) => (
                   <div
                     key={i}
                     className={`h-1.5 rounded-full transition-all duration-500 ${
-                      i === currentQ
-                        ? 'w-8 bg-primary-500'
-                        : i < currentQ
-                        ? 'w-4 bg-primary-500/50'
-                        : 'w-4 bg-surface-700'
+                      i === currentQ ? 'w-8 bg-primary-500' : i < currentQ ? 'w-4 bg-primary-500/50' : 'w-4 bg-surface-700'
                     }`}
                   />
                 ))}
@@ -194,25 +231,28 @@ export default function Quiz() {
             </div>
 
             {/* Question */}
-            <div className="glass rounded-3xl p-8 mb-6">
+            <div className="glass rounded-3xl p-8 mb-6" role="heading" aria-level="2">
               <div className="text-[10px] font-bold text-primary-400 uppercase tracking-widest mb-3">
                 {selectedTopic?.label}
               </div>
               <p className="text-xl font-medium text-surface-50 leading-relaxed">
                 {questions[currentQ].question}
               </p>
+              {!revealed && (
+                <p className="mt-3 text-xs text-surface-600">Press A / B / C / D to answer</p>
+              )}
             </div>
 
             {/* Options */}
-            <div className="space-y-3 mb-6">
+            <div className="space-y-3 mb-6" role="group" aria-label="Answer options">
               {Object.entries(questions[currentQ].options).map(([key, val]) => {
                 const isChosen = answers[currentQ] === key;
                 const isCorrect = questions[currentQ].correct === key;
-                let cls = 'glass border-white/5 text-surface-200 hover:border-white/20 hover:bg-white/[0.03]';
+                let cls = 'glass border-white/5 text-surface-200 hover:border-white/20 hover:bg-white/[0.03] focus:outline-none focus:ring-2 focus:ring-primary-500/50';
                 if (revealed) {
-                  if (isCorrect) cls = 'quiz-option-correct border';
-                  else if (isChosen && !isCorrect) cls = 'quiz-option-wrong border';
-                  else cls = 'opacity-40 border-white/5';
+                  if (isCorrect) cls = 'quiz-option-correct border focus:outline-none';
+                  else if (isChosen && !isCorrect) cls = 'quiz-option-wrong border focus:outline-none';
+                  else cls = 'opacity-40 border-white/5 focus:outline-none';
                 }
                 return (
                   <motion.button
@@ -222,13 +262,15 @@ export default function Quiz() {
                     whileHover={!revealed ? { x: 4 } : {}}
                     whileTap={!revealed ? { scale: 0.98 } : {}}
                     className={`w-full text-left px-5 py-4 rounded-2xl border transition-all duration-300 flex items-center gap-4 ${cls}`}
+                    aria-pressed={isChosen}
+                    aria-label={`Option ${key}: ${val}`}
                   >
                     <span className="w-7 h-7 rounded-lg bg-white/5 flex items-center justify-center text-xs font-bold shrink-0">
                       {key}
                     </span>
                     <span className="text-sm leading-snug">{val}</span>
-                    {revealed && isCorrect && <span className="ml-auto text-success-400">✓</span>}
-                    {revealed && isChosen && !isCorrect && <span className="ml-auto text-danger-400">✗</span>}
+                    {revealed && isCorrect && <span className="ml-auto text-success-400" aria-label="Correct">✓</span>}
+                    {revealed && isChosen && !isCorrect && <span className="ml-auto text-danger-400" aria-label="Incorrect">✗</span>}
                   </motion.button>
                 );
               })}
@@ -241,6 +283,8 @@ export default function Quiz() {
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: 'auto' }}
                   className="glass rounded-2xl p-5 mb-6 border border-primary-500/20"
+                  role="status"
+                  aria-live="polite"
                 >
                   <div className="text-[10px] font-bold text-primary-400 uppercase tracking-widest mb-2">Explanation</div>
                   <p className="text-sm text-surface-300 leading-relaxed">{questions[currentQ].explanation}</p>
@@ -256,6 +300,7 @@ export default function Quiz() {
                 className="w-full py-4 bg-primary-500 hover:bg-primary-400 text-white font-semibold rounded-2xl transition-all shadow-xl shadow-primary-500/20"
               >
                 {currentQ < questions.length - 1 ? 'Next Question →' : 'See Results →'}
+                <span className="ml-2 text-xs opacity-60">↵ Enter</span>
               </motion.button>
             )}
           </motion.div>
@@ -275,6 +320,7 @@ export default function Quiz() {
               animate={{ scale: 1 }}
               transition={{ type: 'spring', stiffness: 200, damping: 14 }}
               className="text-8xl mb-6"
+              aria-hidden="true"
             >
               {getGrade(score).icon}
             </motion.div>
@@ -284,8 +330,10 @@ export default function Quiz() {
             </div>
 
             <ScoreDisplay score={score} total={questions.length} />
+
             <div className="text-surface-400 mb-10 text-sm">
-              {Math.round((score / questions.length) * 100)}% correct on <span className="text-primary-400">{selectedTopic?.label}</span>
+              {Math.round((score / questions.length) * 100)}% correct on{' '}
+              <span className="text-primary-400">{selectedTopic?.label}</span>
             </div>
 
             {/* Breakdown */}
@@ -294,8 +342,11 @@ export default function Quiz() {
                 const chosen = answers[i];
                 const correct = chosen === q.correct;
                 return (
-                  <div key={i} className={`glass rounded-2xl px-5 py-3 flex items-start gap-3 border ${correct ? 'border-success-500/20' : 'border-danger-500/20'}`}>
-                    <span className={`text-base shrink-0 mt-0.5 ${correct ? 'text-success-400' : 'text-danger-400'}`}>
+                  <div
+                    key={i}
+                    className={`glass rounded-2xl px-5 py-3 flex items-start gap-3 border ${correct ? 'border-success-500/20' : 'border-danger-500/20'}`}
+                  >
+                    <span className={`text-base shrink-0 mt-0.5 ${correct ? 'text-success-400' : 'text-danger-400'}`} aria-label={correct ? 'Correct' : 'Incorrect'}>
                       {correct ? '✓' : '✗'}
                     </span>
                     <div className="min-w-0">
@@ -311,7 +362,7 @@ export default function Quiz() {
               })}
             </div>
 
-            <div className="flex gap-4 justify-center">
+            <div className="flex flex-wrap gap-3 justify-center">
               <button
                 onClick={() => handleTopicSelect(selectedTopic)}
                 className="px-8 py-3 bg-primary-500 hover:bg-primary-400 text-white font-semibold rounded-full transition-all shadow-lg"
@@ -323,6 +374,13 @@ export default function Quiz() {
                 className="px-8 py-3 glass text-surface-200 hover:bg-white/5 rounded-full transition-elegant"
               >
                 New Topic
+              </button>
+              <button
+                onClick={handleShare}
+                className="px-6 py-3 glass text-surface-300 hover:bg-white/5 rounded-full transition-elegant flex items-center gap-2"
+                title={copied ? 'Copied!' : 'Share result'}
+              >
+                <span>{copied ? '✓ Copied' : '↗ Share'}</span>
               </button>
             </div>
           </motion.div>

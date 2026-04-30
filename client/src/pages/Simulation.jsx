@@ -14,6 +14,7 @@ export default function Simulation() {
     hasVoted,
     selectedCandidate,
     showVVPAT,
+    vvpatSecondsLeft,
     totalSteps,
     startSimulation,
     fetchNarration,
@@ -101,10 +102,10 @@ export default function Simulation() {
         </div>
 
         {/* Interactive Stage */}
-        <SimulationStage 
-          step={currentStep} 
+        <SimulationStage
+          step={currentStep}
           onAction={(type, payload) => type === 'vote' && castVote(payload)}
-          data={{ hasVoted, selectedCandidate, showVVPAT }}
+          data={{ hasVoted, selectedCandidate, showVVPAT, vvpatSecondsLeft }}
         />
 
         {/* Narration Card */}
@@ -148,7 +149,7 @@ export default function Simulation() {
                 </button>
                 <button
                   onClick={nextStep}
-                  disabled={(currentStep === 5 && !hasVoted) || (currentStep === 6 && !showVVPAT)}
+                  disabled={(currentStep === 5 || currentStep === 6) && !hasVoted}
                   className="flex-1 px-6 py-4 bg-primary-500 hover:bg-primary-400 text-white rounded-xl font-bold shadow-xl shadow-primary-500/20 transition-all flex items-center justify-center gap-2 group"
                 >
                   {currentStep === totalSteps ? 'Complete Process' : 'Continue Journey'}

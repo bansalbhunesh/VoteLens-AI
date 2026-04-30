@@ -10,6 +10,7 @@ export default function Verify() {
   const [result, setResult] = useState(null);
   const [sources, setSources] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
+  const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
 
   const parseVerdict = (text) => {
@@ -138,10 +139,23 @@ export default function Verify() {
 
       {/* Results */}
       {result && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-16 space-y-12">
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-16 space-y-12" role="region" aria-label="Verification result">
           <div className="max-w-prose">
-            <h3 className="text-xs font-medium text-primary-400 uppercase tracking-[0.3em] mb-6">Result</h3>
-            
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xs font-medium text-primary-400 uppercase tracking-[0.3em]">Result</h3>
+              <button
+                onClick={async () => {
+                  const text = parsedResult ? `${parsedResult.verdict}\n\n${parsedResult.cleanText}` : result;
+                  await navigator.clipboard.writeText(text).catch(() => {});
+                  setCopied(true);
+                  setTimeout(() => setCopied(false), 2000);
+                }}
+                className="text-xs text-surface-500 hover:text-surface-300 transition-colors flex items-center gap-1"
+              >
+                {copied ? '✓ Copied' : 'Copy result'}
+              </button>
+            </div>
+
             {parsedResult && (
               <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold tracking-wider mb-6 ${parsedResult.color}`}>
                 <span>{parsedResult.icon}</span>
@@ -159,11 +173,11 @@ export default function Verify() {
               <h4 className="text-xs font-medium text-surface-200/40 uppercase tracking-[0.2em] mb-6">Sources</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {sources.map((s, i) => (
-                  <a 
-                    key={i} 
-                    href={s.url} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                  <a
+                    key={i}
+                    href={s.url}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="glass rounded-2xl p-6 hover:bg-white/5 transition-elegant group"
                   >
                     <p className="text-sm text-surface-50 group-hover:text-primary-400 transition-colors font-medium mb-1 truncate">{s.title}</p>

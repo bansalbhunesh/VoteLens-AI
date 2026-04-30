@@ -1,0 +1,35 @@
+version: '3.9'
+
+services:
+  api:
+    build:
+      context: .
+      target: builder
+    command: node server.js
+    ports:
+      - '3001:3001'
+    environment:
+      - NODE_ENV=development
+      - PORT=3001
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+    env_file:
+      - .env
+    volumes:
+      - ./api:/app/api
+      - ./server.js:/app/server.js
+    restart: unless-stopped
+
+  client:
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev -- --host"
+    ports:
+      - '5173:5173'
+    environment:
+      - VITE_API_URL=http://localhost:3001
+    volumes:
+      - ./client:/app
+      - /app/node_modules
+    depends_on:
+      - api
+    restart: unless-stopped

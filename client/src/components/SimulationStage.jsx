@@ -8,7 +8,7 @@ export default function SimulationStage({ step, onAction, data }) {
       case 3: return <IDVerificationStage />;
       case 4: return <InkingStage />;
       case 5: return <EVMStage onVote={(c) => onAction('vote', c)} hasVoted={data.hasVoted} selectedCandidate={data.selectedCandidate} />;
-      case 6: return <VVPATStage candidate={data.selectedCandidate} show={data.showVVPAT} />;
+      case 6: return <VVPATStage candidate={data.selectedCandidate} show={data.showVVPAT} secondsLeft={data.vvpatSecondsLeft} />;
       case 7: return <CompletionStage />;
       default: return null;
     }
@@ -221,7 +221,7 @@ function EVMStage({ onVote, hasVoted, selectedCandidate }) {
 }
 
 /* ── Step 6: VVPAT ── */
-function VVPATStage({ candidate, show }) {
+function VVPATStage({ candidate, show, secondsLeft }) {
   return (
     <div className="flex flex-col items-center gap-4">
       <div className="text-xs text-accent-400 font-bold uppercase tracking-widest mb-1">VVPAT — Paper Audit Trail</div>
@@ -237,20 +237,19 @@ function VVPATStage({ candidate, show }) {
               exit={{ y: 200, opacity: 0 }}
               transition={{ duration: 1.2, ease: [0.4, 0, 0.2, 1] }}
               className="bg-white w-24 p-2 flex flex-col items-center shadow-lg"
-              style={{ marginTop: 0 }}
             >
               <div className="text-[8px] font-bold text-slate-400 border-b border-slate-200 w-full text-center pb-1 mb-1">VVPAT SLIP</div>
               <div className="text-4xl my-1">{candidate.symbol}</div>
-              <div className="text-[9px] font-black text-slate-800 text-center uppercase leading-tight">
-                {candidate.name}
-              </div>
+              <div className="text-[9px] font-black text-slate-800 text-center uppercase leading-tight">{candidate.name}</div>
               <div className="text-[6px] text-slate-400 mt-2">SR: 8742910</div>
             </motion.div>
           )}
         </AnimatePresence>
       </div>
-      <div className="text-xs text-primary-400 font-medium">
-        {show ? 'Slip visible for 7 seconds, then sealed' : 'Cast your vote to see the paper trail'}
+      <div className="text-xs text-primary-400 font-medium text-center">
+        {show
+          ? <><span className="tabular-nums font-bold">{secondsLeft}s</span> — slip visible, then sealed in drop box</>
+          : 'Cast your vote to see the paper trail'}
       </div>
     </div>
   );
