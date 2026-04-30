@@ -14,6 +14,28 @@ function getGrade(score) {
   return GRADES.find((g) => score >= g.min);
 }
 
+// ── Quiz history (localStorage) ──
+const HISTORY_KEY = 'votelens_quiz_scores';
+
+function loadHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '{}'); } catch { return {}; }
+}
+
+function saveScore(topicId, score, total) {
+  const h = loadHistory();
+  const prev = h[topicId];
+  h[topicId] = {
+    best: prev ? Math.max(prev.best, score) : score,
+    last: score,
+    total,
+    attempts: (prev?.attempts || 0) + 1,
+    date: new Date().toISOString().split('T')[0],
+  };
+  try { localStorage.setItem(HISTORY_KEY, JSON.stringify(h)); } catch {}
+  return h;
+}
+
+// ── Animated score counter ──
 function useCountUp(target, duration = 900) {
   const [count, setCount] = useState(0);
   const raf = useRef(null);
@@ -49,6 +71,8 @@ export default function Quiz() {
   const [revealed, setRevealed] = useState(false);
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
+  const [quizHistory, setQuizHistory] = useState(() => loadHistory());
+  const prevLastRef = useRef(null); // score from the previous attempt on this topic
 
   const score = Object.entries(answers).filter(
     ([i, ans]) => questions[parseInt(i)]?.correct === ans
@@ -79,6 +103,8 @@ export default function Quiz() {
     setSelectedTopic(topic);
     setPhase('loading');
     setError('');
+    // Capture previous last score before this attempt is saved
+    prevLastRef.current = quizHistory[topic.id]?.last ?? null;
     try {
       const qs = await generateQuiz(topic.id);
       setQuestions(qs);
@@ -103,6 +129,9 @@ export default function Quiz() {
       setCurrentQ((q) => q + 1);
       setRevealed(false);
     } else {
+      // Save score before transitioning so results screen has fresh history
+      const newHistory = saveScore(selectedTopic.id, score, questions.length);
+      setQuizHistory(newHistory);
       setPhase('results');
     }
   };
@@ -133,6 +162,12 @@ export default function Quiz() {
     }
   };
 
+  // Trend compared to previous attempt (computed after saving)
+  const prevLast = prevLastRef.current;
+  const trend = prevLast !== null
+    ? score > prevLast ? 'improved' : score < prevLast ? 'lower' : 'same'
+    : null;
+
   return (
     <div className="max-w-3xl mx-auto px-6 py-12">
       <div className="mb-10">
@@ -159,23 +194,46 @@ export default function Quiz() {
               </div>
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {QUIZ_TOPICS.map((topic, i) => (
-                <motion.button
-                  key={topic.id}
-                  initial={{ opacity: 0, y: 12 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.07 }}
-                  onClick={() => handleTopicSelect(topic)}
-                  className="group text-left glass rounded-3xl p-6 border border-white/5 hover:border-primary-500/30 hover:bg-white/[0.03] transition-elegant"
-                >
-                  <div className="text-3xl mb-3 group-hover:scale-110 transition-transform inline-block">{topic.icon}</div>
-                  <div className="font-semibold text-surface-50 mb-1">{topic.label}</div>
-                  <div className="text-xs text-surface-400/70 leading-snug">{topic.desc}</div>
-                  <div className="mt-3 text-xs text-primary-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
-                    Start 5 questions →
-                  </div>
-                </motion.button>
-              ))}
+              {QUIZ_TOPICS.map((topic, i) => {
+                const record = quizHistory[topic.id];
+                return (
+                  <motion.button
+                    key={topic.id}
+                    initial={{ opacity: 0, y: 12 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.07 }}
+                    onClick={() => handleTopicSelect(topic)}
+                    className="group text-left glass rounded-3xl p-6 border border-white/5 hover:border-primary-500/30 hover:bg-white/[0.03] transition-elegant"
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <span className="text-3xl group-hover:scale-110 transition-transform inline-block">{topic.icon}</span>
+                      {record && (
+                        <span
+                          className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${
+                            record.best >= 4
+                              ? 'bg-success-500/10 text-success-400 border-success-500/20'
+                              : record.best >= 3
+                              ? 'bg-accent-500/10 text-accent-400 border-accent-500/20'
+                              : 'bg-surface-700/30 text-surface-400 border-white/10'
+                          }`}
+                        >
+                          Best {record.best}/{record.total}
+                        </span>
+                      )}
+                    </div>
+                    <div className="font-semibold text-surface-50 mb-1">{topic.label}</div>
+                    <div className="text-xs text-surface-400/70 leading-snug">{topic.desc}</div>
+                    {record && (
+                      <div className="text-[10px] text-surface-600 mt-2">
+                        {record.attempts} attempt{record.attempts !== 1 ? 's' : ''} · last {record.date}
+                      </div>
+                    )}
+                    <div className="mt-3 text-xs text-primary-400 font-medium opacity-0 group-hover:opacity-100 transition-opacity">
+                      {record ? 'Try again →' : 'Start 5 questions →'}
+                    </div>
+                  </motion.button>
+                );
+              })}
             </div>
           </motion.div>
         )}
@@ -331,6 +389,22 @@ export default function Quiz() {
 
             <ScoreDisplay score={score} total={questions.length} />
 
+            {/* Trend indicator */}
+            {trend && (
+              <motion.div
+                initial={{ opacity: 0, y: 4 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.5 }}
+                className={`inline-flex items-center gap-1 text-xs font-medium mb-2 ${
+                  trend === 'improved' ? 'text-success-400' : trend === 'lower' ? 'text-warning-400' : 'text-surface-500'
+                }`}
+              >
+                {trend === 'improved' && '↑ Improved from last attempt'}
+                {trend === 'lower' && '↓ Lower than last attempt'}
+                {trend === 'same' && '→ Same as last attempt'}
+              </motion.div>
+            )}
+
             <div className="text-surface-400 mb-10 text-sm">
               {Math.round((score / questions.length) * 100)}% correct on{' '}
               <span className="text-primary-400">{selectedTopic?.label}</span>
@@ -346,7 +420,7 @@ export default function Quiz() {
                     key={i}
                     className={`glass rounded-2xl px-5 py-3 flex items-start gap-3 border ${correct ? 'border-success-500/20' : 'border-danger-500/20'}`}
                   >
-                    <span className={`text-base shrink-0 mt-0.5 ${correct ? 'text-success-400' : 'text-danger-400'}`} aria-label={correct ? 'Correct' : 'Incorrect'}>
+                    <span className={`text-base shrink-0 mt-0.5 ${correct ? 'text-success-400' : 'text-danger-400'}`}>
                       {correct ? '✓' : '✗'}
                     </span>
                     <div className="min-w-0">
@@ -380,7 +454,7 @@ export default function Quiz() {
                 className="px-6 py-3 glass text-surface-300 hover:bg-white/5 rounded-full transition-elegant flex items-center gap-2"
                 title={copied ? 'Copied!' : 'Share result'}
               >
-                <span>{copied ? '✓ Copied' : '↗ Share'}</span>
+                {copied ? '✓ Copied' : '↗ Share'}
               </button>
             </div>
           </motion.div>
