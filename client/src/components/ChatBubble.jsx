@@ -1,10 +1,31 @@
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import MarkdownText from './MarkdownText';
+
+function formatAge(ts) {
+  if (!ts) return '';
+  const sec = Math.floor((Date.now() - ts) / 1000);
+  if (sec < 60) return 'just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60) return `${min}m ago`;
+  const hr = Math.floor(min / 60);
+  if (hr < 24) return `${hr}h ago`;
+  return `${Math.floor(hr / 24)}d ago`;
+}
 
 export default function ChatBubble({ message, index }) {
   const isUser = message.role === 'user';
   const isError = message.isError;
   const hasSources = !isUser && !isError && message.sources?.length > 0;
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(message.content);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch { /* clipboard denied */ }
+  };
 
   return (
     <motion.div
@@ -28,7 +49,7 @@ export default function ChatBubble({ message, index }) {
           {isUser ? '👤' : '🗳️'}
         </div>
 
-        <div className="flex flex-col gap-2 min-w-0">
+        <div className="flex flex-col gap-1 min-w-0">
           {/* Bubble */}
           <div
             className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
@@ -40,11 +61,18 @@ export default function ChatBubble({ message, index }) {
             }`}
           >
             {message.isStreaming && !message.content ? (
-              <div className="flex gap-1.5 py-1 items-center" aria-label="AI is thinking">
-                <span className="typing-dot w-2 h-2 bg-primary-400 rounded-full" />
-                <span className="typing-dot w-2 h-2 bg-primary-400 rounded-full" />
-                <span className="typing-dot w-2 h-2 bg-primary-400 rounded-full" />
-              </div>
+              message.isGrounded ? (
+                <div className="flex items-center gap-2 py-1 text-success-400 text-xs" aria-label="Searching the web">
+                  <span className="w-3 h-3 border-2 border-success-400 border-t-transparent rounded-full animate-spin shrink-0" />
+                  <span>Searching the web…</span>
+                </div>
+              ) : (
+                <div className="flex gap-1.5 py-1 items-center" aria-label="AI is thinking">
+                  <span className="typing-dot w-2 h-2 bg-primary-400 rounded-full" />
+                  <span className="typing-dot w-2 h-2 bg-primary-400 rounded-full" />
+                  <span className="typing-dot w-2 h-2 bg-primary-400 rounded-full" />
+                </div>
+              )
             ) : (
               <>
                 {isUser
@@ -58,7 +86,7 @@ export default function ChatBubble({ message, index }) {
             )}
           </div>
 
-          {/* Sources (grounded responses) */}
+          {/* Sources */}
           {hasSources && (
             <div className="flex flex-wrap gap-2 pl-1">
               {message.sources.slice(0, 3).map((s, i) => (
@@ -74,6 +102,24 @@ export default function ChatBubble({ message, index }) {
                   <span className="truncate">{s.title || (() => { try { return new URL(s.url).hostname; } catch { return s.url; } })()}</span>
                 </a>
               ))}
+            </div>
+          )}
+
+          {/* Metadata: timestamp + copy */}
+          {!message.isStreaming && (
+            <div className={`flex items-center gap-2 px-1 ${isUser ? 'justify-end' : 'justify-start'}`}>
+              {message.ts && (
+                <span className="text-[10px] text-surface-700">{formatAge(message.ts)}</span>
+              )}
+              {!isUser && !isError && message.content && (
+                <button
+                  onClick={handleCopy}
+                  className="text-[10px] text-surface-700 hover:text-surface-400 transition-colors tabular-nums"
+                  title="Copy message"
+                >
+                  {copied ? '✓ copied' : 'copy'}
+                </button>
+              )}
             </div>
           )}
         </div>

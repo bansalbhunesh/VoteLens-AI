@@ -31,13 +31,11 @@ export function useChat() {
   const [useGrounding, setUseGrounding] = useState(false);
   const abortControllerRef = useRef(null);
 
-  // Persist on every message change (skip in-flight streaming messages)
   useEffect(() => {
     const stable = messages.filter((m) => !m.isStreaming);
     if (stable.length > 0) saveHistory(stable);
   }, [messages]);
 
-  // Cleanup on unmount
   useEffect(() => {
     return () => abortControllerRef.current?.abort();
   }, []);
@@ -46,10 +44,10 @@ export function useChat() {
     async (text, lang = 'en') => {
       if (!text.trim() || isLoading) return;
 
-      const userMessage = { role: 'user', content: text.trim() };
+      const userMessage = { role: 'user', content: text.trim(), ts: Date.now() };
       const history = [...messages, userMessage];
 
-      setMessages([...history, { role: 'assistant', content: '', isStreaming: true }]);
+      setMessages([...history, { role: 'assistant', content: '', isStreaming: true, isGrounded: useGrounding }]);
       setIsLoading(true);
 
       abortControllerRef.current?.abort();
@@ -57,7 +55,6 @@ export function useChat() {
 
       try {
         if (useGrounding) {
-          // Grounded mode: single non-streaming call with Google Search
           const { text: answer, sources } = await getElectionInfo(text.trim());
           setMessages((prev) => {
             const next = [...prev];
@@ -66,6 +63,7 @@ export function useChat() {
               content: answer,
               isStreaming: false,
               sources: sources || [],
+              ts: Date.now(),
             };
             return next;
           });
@@ -84,7 +82,7 @@ export function useChat() {
 
           setMessages((prev) => {
             const next = [...prev];
-            next[next.length - 1] = { role: 'assistant', content: fullResponse, isStreaming: false };
+            next[next.length - 1] = { role: 'assistant', content: fullResponse, isStreaming: false, ts: Date.now() };
             return next;
           });
         }
@@ -109,6 +107,12 @@ export function useChat() {
     [messages, isLoading, mode, useGrounding]
   );
 
+  const cancelMessage = useCallback(() => {
+    abortControllerRef.current?.abort();
+    setIsLoading(false);
+    setMessages((prev) => prev.filter((m) => !m.isStreaming));
+  }, []);
+
   const clearChat = useCallback(() => {
     abortControllerRef.current?.abort();
     setMessages([]);
@@ -124,5 +128,5 @@ export function useChat() {
     setUseGrounding((prev) => !prev);
   }, []);
 
-  return { messages, isLoading, mode, useGrounding, sendMessage, clearChat, toggleMode, toggleGrounding };
+  return { messages, isLoading, mode, useGrounding, sendMessage, cancelMessage, clearChat, toggleMode, toggleGrounding };
 }
