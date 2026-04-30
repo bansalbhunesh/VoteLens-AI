@@ -11,6 +11,12 @@ import {
 
 const router = Router();
 
+// Input length limits
+const MAX_CLAIM_LENGTH   = 2000;
+const MAX_QUERY_LENGTH   = 1000;
+const MAX_TOPIC_LENGTH   = 200;
+const MAX_MSG_CONTENT    = 4000;
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
@@ -23,9 +29,9 @@ const upload = multer({
   },
 });
 
-// ── Helpers ──
+// ── SSE helpers ──
 
-function sseHeaders(res) {
+function sseOpen(res) {
   res.writeHead(200, {
     'Content-Type': 'text/event-stream',
     'Cache-Control': 'no-cache',
@@ -34,12 +40,17 @@ function sseHeaders(res) {
   });
 }
 
-function sseWrite(res, payload) {
+function sseData(res, payload) {
   res.write(`data: ${JSON.stringify(payload)}\n\n`);
 }
 
+// Raw SSE done marker — NOT JSON-encoded so client's `=== '[DONE]'` check works correctly.
+function sseDone(res) {
+  res.write('data: [DONE]\n\n');
+  res.end();
+}
+
 // ── POST /api/chat ──
-// Streams chat responses as SSE. Body: { messages, mode, lang }
 router.post('/chat', async (req, res, next) => {
   try {
     const { messages, mode = 'normal', lang = 'en' } = req.body;
@@ -48,22 +59,35 @@ router.post('/chat', async (req, res, next) => {
       return res.status(400).json({ error: 'messages must be a non-empty array.' });
     }
 
-    // Enforce a hard cap to prevent token abuse
-    const capped = messages.slice(-40);
-
-    sseHeaders(res);
-
-    const stream = chatWithMentor(capped, mode, lang);
-    for await (const chunk of stream) {
-      sseWrite(res, { text: chunk });
+    // Validate individual message shape and content length
+    for (const m of messages) {
+      if (!m.role || !m.content || typeof m.content !== 'string') {
+        return res.status(400).json({ error: 'Each message must have role and content.' });
+      }
+      if (m.content.length > MAX_MSG_CONTENT) {
+        return res.status(400).json({ error: `Message content exceeds ${MAX_MSG_CONTENT} character limit.` });
+      }
     }
 
-    sseWrite(res, '[DONE]');
-    res.end();
+    const capped = messages.slice(-40);
+
+    sseOpen(res);
+
+    // Abort the Gemini stream if the client disconnects mid-response.
+    const abortController = new AbortController();
+    req.on('close', () => abortController.abort());
+
+    const stream = chatWithMentor(capped, mode, lang, abortController.signal);
+    for await (const chunk of stream) {
+      if (res.writableEnded) break;
+      sseData(res, { text: chunk });
+    }
+
+    if (!res.writableEnded) sseDone(res);
   } catch (err) {
+    if (err.name === 'AbortError') return res.end();
     if (res.headersSent) {
-      sseWrite(res, { error: 'Stream interrupted. Please try again.' });
-      res.end();
+      if (!res.writableEnded) { sseData(res, { error: 'Stream interrupted.' }); res.end(); }
     } else {
       next(err);
     }
@@ -71,7 +95,6 @@ router.post('/chat', async (req, res, next) => {
 });
 
 // ── POST /api/analyze ──
-// Multimodal image analysis. Body: FormData with 'image' + optional 'prompt'.
 router.post('/analyze', upload.single('image'), async (req, res, next) => {
   try {
     if (!req.file) {
@@ -85,12 +108,14 @@ router.post('/analyze', upload.single('image'), async (req, res, next) => {
 });
 
 // ── POST /api/verify ──
-// Fact-check a claim using Google Search grounding. Body: { claim }
 router.post('/verify', async (req, res, next) => {
   try {
     const { claim } = req.body;
     if (!claim || typeof claim !== 'string' || !claim.trim()) {
       return res.status(400).json({ error: 'claim must be a non-empty string.' });
+    }
+    if (claim.length > MAX_CLAIM_LENGTH) {
+      return res.status(400).json({ error: `Claim exceeds ${MAX_CLAIM_LENGTH} character limit.` });
     }
     const result = await verifyInformation(claim.trim());
     res.json(result);
@@ -100,12 +125,14 @@ router.post('/verify', async (req, res, next) => {
 });
 
 // ── POST /api/election-info ──
-// Grounded real-time election information. Body: { query }
 router.post('/election-info', async (req, res, next) => {
   try {
     const { query } = req.body;
     if (!query || typeof query !== 'string' || !query.trim()) {
       return res.status(400).json({ error: 'query must be a non-empty string.' });
+    }
+    if (query.length > MAX_QUERY_LENGTH) {
+      return res.status(400).json({ error: `Query exceeds ${MAX_QUERY_LENGTH} character limit.` });
     }
     const result = await getElectionInfo(query.trim());
     res.json(result);
@@ -115,7 +142,6 @@ router.post('/election-info', async (req, res, next) => {
 });
 
 // ── POST /api/simulate ──
-// Streams simulation step narration as SSE. Body: { step, stepName, facts }
 router.post('/simulate', async (req, res, next) => {
   try {
     const { step, stepName, facts = [] } = req.body;
@@ -123,18 +149,22 @@ router.post('/simulate', async (req, res, next) => {
       return res.status(400).json({ error: 'step and stepName are required.' });
     }
 
-    sseHeaders(res);
+    sseOpen(res);
 
-    const stream = getSimulationNarration(step, stepName, facts);
+    const abortController = new AbortController();
+    req.on('close', () => abortController.abort());
+
+    const stream = getSimulationNarration(step, stepName, facts, abortController.signal);
     for await (const chunk of stream) {
-      sseWrite(res, { text: chunk });
+      if (res.writableEnded) break;
+      sseData(res, { text: chunk });
     }
 
-    sseWrite(res, '[DONE]');
-    res.end();
+    if (!res.writableEnded) sseDone(res);
   } catch (err) {
+    if (err.name === 'AbortError') return res.end();
     if (res.headersSent) {
-      res.end();
+      if (!res.writableEnded) res.end();
     } else {
       next(err);
     }
@@ -142,12 +172,14 @@ router.post('/simulate', async (req, res, next) => {
 });
 
 // ── POST /api/quiz ──
-// Generate 5 MCQ questions using Gemini JSON mode. Body: { topic }
 router.post('/quiz', async (req, res, next) => {
   try {
     const { topic } = req.body;
     if (!topic || typeof topic !== 'string' || !topic.trim()) {
       return res.status(400).json({ error: 'topic must be a non-empty string.' });
+    }
+    if (topic.length > MAX_TOPIC_LENGTH) {
+      return res.status(400).json({ error: `Topic exceeds ${MAX_TOPIC_LENGTH} character limit.` });
     }
     const questions = await generateQuiz(topic.trim());
     res.json({ questions });

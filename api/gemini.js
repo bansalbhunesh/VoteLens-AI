@@ -50,7 +50,7 @@ function getSystemPrompt(mode) {
  * @param {'en'|'hi'} lang - Response language
  * @returns {AsyncGenerator<string>} Streamed text chunks
  */
-export async function* chatWithMentor(messages, mode = 'normal', lang = 'en') {
+export async function* chatWithMentor(messages, mode = 'normal', lang = 'en', signal) {
   const client = getClient();
   const basePrompt = getSystemPrompt(mode);
   const systemPrompt = lang === 'hi'
@@ -70,13 +70,13 @@ export async function* chatWithMentor(messages, mode = 'normal', lang = 'en') {
       temperature: 0.7,
       topP: 0.9,
       maxOutputTokens: 1024,
+      abortSignal: signal,
     },
   });
 
   for await (const chunk of response) {
-    if (chunk.text) {
-      yield chunk.text;
-    }
+    if (signal?.aborted) return;
+    if (chunk.text) yield chunk.text;
   }
 }
 
@@ -223,27 +223,28 @@ export async function generateQuiz(topic) {
  * @param {string[]} facts - Array of facts to include in the narration
  * @returns {AsyncGenerator<string>} Streamed narration
  */
-export async function* getSimulationNarration(step, stepName, facts = []) {
+export async function* getSimulationNarration(step, stepName, facts = [], signal) {
   const client = getClient();
   const prompt = SIMULATION_NARRATOR_PROMPT.replace('{step}', String(step));
 
   const factContext = facts.length > 0
-    ? `\n\nEnsure you weave these verified facts into the narration naturally:\n- ${facts.join('\n- ')}`
+    ? `\n\nWeave these verified facts naturally into the narration:\n- ${facts.join('\n- ')}`
     : '';
 
-  const response = await client.models.generateContentStream({
+  // Use withRetries for the initial API call; streaming loop handles abort manually.
+  const response = await withRetries(() => client.models.generateContentStream({
     model: MODEL,
     contents: `Narrate step ${step}: ${stepName}. Make it vivid and immersive.${factContext}`,
     config: {
       systemInstruction: prompt,
       temperature: 0.8,
       maxOutputTokens: 500,
+      abortSignal: signal,
     },
-  });
+  }), { timeoutMs: 20000, retries: 2 });
 
   for await (const chunk of response) {
-    if (chunk.text) {
-      yield chunk.text;
-    }
+    if (signal?.aborted) return;
+    if (chunk.text) yield chunk.text;
   }
 }

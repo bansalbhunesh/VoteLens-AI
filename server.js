@@ -104,14 +104,32 @@ app.use('/api', apiRoutes);
 // ── Static Files + SPA Fallback (production) ──
 if (isProd) {
   const clientDist = join(__dirname, 'client', 'dist');
+
+  // Hashed assets (JS/CSS bundles from Vite) get long-term immutable caching.
+  // index.html must never be cached so users always get the latest shell.
   app.use(
-    express.static(clientDist, {
-      maxAge: '7d',
+    '/assets',
+    express.static(join(clientDist, 'assets'), {
+      maxAge: '1y',
       immutable: true,
-      etag: true,
+      etag: false,
     })
   );
-  app.get('*', (_req, res) => res.sendFile(join(clientDist, 'index.html')));
+  app.use(
+    express.static(clientDist, {
+      maxAge: 0,
+      etag: true,
+      setHeaders(res, filePath) {
+        if (filePath.endsWith('.html')) {
+          res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+        }
+      },
+    })
+  );
+  app.get('*', (_req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(join(clientDist, 'index.html'));
+  });
 }
 
 // ── Error Handler (must be last) ──
