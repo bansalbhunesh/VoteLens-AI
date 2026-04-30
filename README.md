@@ -30,7 +30,7 @@ VoteLens AI is a **human-centered AI election experience** that goes beyond Q&A.
 | **💬 Explain** | Conversational AI mentor with voice support and emotional intelligence | Streaming chat + Web Speech API |
 
 ### Key Differentiator
-**"Google Maps for voting"** — not "ChatGPT for elections." Users don't just get answers — they *experience* the voting process.
+**"Google Maps for voting"** — not just another Q&A bot. Users don't just get answers — they *experience* the voting process.
 
 ---
 
