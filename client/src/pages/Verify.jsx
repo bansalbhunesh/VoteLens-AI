@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import FileUpload from '../components/FileUpload';
+import MarkdownText from '../components/MarkdownText';
 import { analyzeImage, verifyClaim } from '../utils/api';
 
 export default function Verify() {
@@ -10,6 +11,27 @@ export default function Verify() {
   const [sources, setSources] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+
+  const parseVerdict = (text) => {
+    if (!text) return null;
+    const match = text.match(/\[VERDICT\]\s*(TRUE|FALSE|PARTIALLY TRUE|UNVERIFIABLE|INVALID)/i);
+    if (!match) return null;
+    
+    const verdict = match[1].toUpperCase();
+    const cleanText = text.replace(/\[VERDICT\].*?\n/i, '').trim();
+    
+    let color = 'bg-surface-500/20 text-surface-200 border-surface-500/30';
+    let icon = '❓';
+    
+    if (verdict === 'TRUE') { color = 'bg-success-500/20 text-success-400 border-success-500/30'; icon = '✅'; }
+    if (verdict === 'FALSE') { color = 'bg-danger-500/20 text-danger-400 border-danger-500/30'; icon = '❌'; }
+    if (verdict === 'PARTIALLY TRUE') { color = 'bg-warning-500/20 text-warning-400 border-warning-500/30'; icon = '⚠️'; }
+    if (verdict === 'INVALID') { color = 'bg-surface-500/20 text-surface-400 border-surface-500/30'; icon = '🛑'; }
+    
+    return { verdict, cleanText, color, icon };
+  };
+
+  const parsedResult = tab === 'verify' && result ? parseVerdict(result) : null;
 
   const handleVerify = async () => {
     if (!claimText.trim()) return;
@@ -105,13 +127,30 @@ export default function Verify() {
         </motion.div>
       </AnimatePresence>
 
+      {/* Error State */}
+      {error && (
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-8 p-6 glass border-danger-500/30 rounded-2xl">
+          <p className="text-danger-400 text-sm flex items-center gap-2">
+            <span>⚠️</span> {error}
+          </p>
+        </motion.div>
+      )}
+
       {/* Results */}
       {result && (
         <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-16 space-y-12">
           <div className="max-w-prose">
             <h3 className="text-xs font-medium text-primary-400 uppercase tracking-[0.3em] mb-6">Result</h3>
-            <div className="markdown-content text-xl text-surface-200/80 font-light leading-relaxed">
-              {result}
+            
+            {parsedResult && (
+              <div className={`inline-flex items-center gap-2 px-4 py-2 rounded-full border text-sm font-bold tracking-wider mb-6 ${parsedResult.color}`}>
+                <span>{parsedResult.icon}</span>
+                {parsedResult.verdict}
+              </div>
+            )}
+
+            <div className="markdown-content text-surface-200/80 font-light leading-relaxed [&_p]:text-lg [&_p]:mb-3 [&_h3]:text-base [&_h3]:font-bold [&_h3]:text-surface-50 [&_h3]:mt-4 [&_h3]:mb-1 [&_h4]:text-sm [&_h4]:font-bold [&_h4]:text-surface-50 [&_h4]:mt-3 [&_h4]:mb-1">
+              <MarkdownText content={parsedResult ? parsedResult.cleanText : result} />
             </div>
           </div>
 

@@ -1,119 +1,185 @@
 import { useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import { useSimulation } from '../hooks/useSimulation';
+import SimulationStage from '../components/SimulationStage';
+import MarkdownText from '../components/MarkdownText';
 import { SIMULATION_STEPS } from '../utils/constants';
-import EVMachine from '../components/EVMachine';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function Simulation() {
-  const sim = useSimulation();
-  const step = SIMULATION_STEPS.find((s) => s.id === sim.currentStep);
+  const {
+    currentStep,
+    narration,
+    isNarrating,
+    completedSteps,
+    hasVoted,
+    selectedCandidate,
+    showVVPAT,
+    totalSteps,
+    startSimulation,
+    fetchNarration,
+    nextStep,
+    prevStep,
+    castVote,
+    resetSimulation,
+  } = useSimulation();
 
   useEffect(() => {
-    if (sim.currentStep > 0 && sim.currentStep !== 5) {
-      sim.fetchNarration(sim.currentStep);
+    if (currentStep > 0 && !narration && !isNarrating) {
+      fetchNarration(currentStep);
     }
-  }, [sim.currentStep]);
+  }, [currentStep, narration, isNarrating, fetchNarration]);
 
-  if (sim.currentStep === 0) {
+  const stepData = SIMULATION_STEPS.find((s) => s.id === currentStep);
+
+  if (currentStep === 0) {
     return (
-      <div className="min-h-[calc(100vh-8rem)] flex items-center justify-center px-4">
-        <motion.div initial={{ opacity: 0, y: 30 }} animate={{ opacity: 1, y: 0 }} className="text-center max-w-lg">
-          <div className="text-6xl mb-6">🗳️</div>
-          <h1 className="text-3xl sm:text-4xl font-black mb-4">Virtual Polling Booth</h1>
-          <p className="text-surface-200 mb-8">Experience the complete voting process step by step — from arriving at the booth to casting your vote on the EVM.</p>
-          <motion.button onClick={sim.startSimulation} whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} className="px-8 py-4 bg-gradient-to-r from-primary-500 to-primary-600 text-white font-semibold rounded-2xl text-lg shadow-xl shadow-primary-500/25" id="start-simulation-btn">
-            Begin Your Voting Journey
-          </motion.button>
-        </motion.div>
+      <div className="pt-24 pb-12 px-6">
+        <div className="max-w-4xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="glass rounded-[48px] p-16 relative overflow-hidden"
+          >
+            <div className="absolute top-0 right-0 w-64 h-64 bg-primary-500/10 blur-[100px] rounded-full" />
+            <div className="absolute bottom-0 left-0 w-64 h-64 bg-accent-500/10 blur-[100px] rounded-full" />
+            
+            <div className="relative z-10">
+              <span className="inline-block px-4 py-1.5 rounded-full bg-primary-500/10 text-primary-400 text-xs font-bold uppercase tracking-widest mb-6">
+                Interactive Learning
+              </span>
+              <h1 className="text-5xl font-black mb-6 leading-tight">
+                Experience the <span className="gradient-text">Poll Day</span>
+              </h1>
+              <p className="text-surface-400 text-xl max-w-2xl mx-auto mb-12 leading-relaxed">
+                Step into a virtual polling booth. We've combined real-world ECI protocols with 
+                vivid AI narration to prepare you for your democratic duty.
+              </p>
+              <button
+                onClick={startSimulation}
+                className="group relative px-10 py-5 bg-primary-500 text-white rounded-2xl font-bold text-lg shadow-2xl shadow-primary-500/40 hover:scale-105 transition-all"
+              >
+                Begin Your Journey
+                <span className="ml-2 group-hover:translate-x-1 transition-transform inline-block">→</span>
+              </button>
+            </div>
+          </motion.div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-8">
-      {/* Progress Bar */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-3">
-          <h1 className="text-xl font-bold">Voting Simulation</h1>
-          <span className="text-sm text-surface-200">Step {sim.currentStep} of {sim.totalSteps}</span>
+    <div className="pt-24 pb-20 px-6">
+      <div className="max-w-5xl mx-auto">
+        {/* Progress Header */}
+        <div className="flex justify-between items-center mb-12">
+          <button
+            onClick={resetSimulation}
+            className="text-surface-500 hover:text-white transition-colors text-sm font-medium flex items-center gap-2"
+          >
+            ← Exit Simulation
+          </button>
+          
+          <div className="flex gap-2">
+            {SIMULATION_STEPS.map((s) => (
+              <div
+                key={s.id}
+                className={`h-1.5 w-12 rounded-full transition-all duration-500 ${
+                  s.id === currentStep
+                    ? 'bg-primary-500 w-16'
+                    : completedSteps.has(s.id)
+                    ? 'bg-primary-500/40'
+                    : 'bg-surface-800'
+                }`}
+              />
+            ))}
+          </div>
+          
+          <div className="text-surface-500 text-sm font-bold tabular-nums">
+            STEP {currentStep} <span className="text-surface-700">/ {totalSteps}</span>
+          </div>
         </div>
-        <div className="flex gap-1.5" role="progressbar" aria-valuenow={sim.currentStep} aria-valuemin={1} aria-valuemax={sim.totalSteps}>
-          {SIMULATION_STEPS.map((s) => (
-            <div key={s.id} className={`h-2 flex-1 rounded-full transition-all duration-500 ${s.id <= sim.currentStep ? 'bg-gradient-to-r from-primary-500 to-primary-400' : s.id <= sim.currentStep ? 'bg-primary-500/30' : 'bg-surface-700'} ${sim.completedSteps.has(s.id) ? 'bg-success-500' : ''}`} />
-          ))}
-        </div>
-      </div>
 
-      {/* Step Content */}
-      <AnimatePresence mode="wait">
-        <motion.div key={sim.currentStep} initial={{ opacity: 0, x: 50 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -50 }} transition={{ duration: 0.3 }}>
-          {step && (
-            <div className="glass rounded-2xl p-6 sm:p-8 mb-6">
+        {/* Interactive Stage */}
+        <SimulationStage 
+          step={currentStep} 
+          onAction={(type, payload) => type === 'vote' && castVote(payload)}
+          data={{ hasVoted, selectedCandidate, showVVPAT }}
+        />
+
+        {/* Narration Card */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          <div className="lg:col-span-2">
+            <motion.div
+              key={currentStep}
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="glass rounded-3xl p-10 min-h-[250px] relative"
+            >
               <div className="flex items-center gap-4 mb-6">
-                <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 flex items-center justify-center text-2xl">{step.icon}</div>
-                <div>
-                  <p className="text-xs text-primary-400 uppercase tracking-wider font-bold">Step {step.id}</p>
-                  <h2 className="text-2xl font-bold">{step.title}</h2>
+                <div className="w-12 h-12 bg-primary-500/20 rounded-2xl flex items-center justify-center text-2xl">
+                  {stepData.icon}
                 </div>
+                <h2 className="text-3xl font-black gradient-text tracking-tight">{stepData.title}</h2>
+              </div>
+              
+              <div className="text-surface-200 text-lg leading-relaxed mb-8">
+                {isNarrating && !narration ? (
+                  <div className="flex gap-2 items-center py-4 text-primary-400">
+                    <span className="w-2 h-2 bg-primary-500 rounded-full animate-bounce" />
+                    <span className="w-2 h-2 bg-primary-500 rounded-full animate-bounce [animation-delay:0.2s]" />
+                    <span className="w-2 h-2 bg-primary-500 rounded-full animate-bounce [animation-delay:0.4s]" />
+                    <span className="ml-2 text-sm font-medium">AI Narrator is speaking...</span>
+                  </div>
+                ) : narration ? (
+                  <MarkdownText content={narration} />
+                ) : (
+                  <p className="text-surface-200 text-lg leading-relaxed">{stepData.description}</p>
+                )}
               </div>
 
-              {/* EVM interaction for step 5 */}
-              {sim.currentStep === 5 ? (
-                <div>
-                  <p className="text-surface-200 mb-6">Find your chosen candidate's name and symbol on the ballot unit. Press the blue button next to their name to cast your vote.</p>
-                  <EVMachine onVote={sim.castVote} hasVoted={sim.hasVoted} selectedCandidate={sim.selectedCandidate} showVVPAT={sim.showVVPAT} />
-                  {sim.hasVoted && (
-                    <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1 }} className="mt-6 text-center">
-                      <p className="text-success-400 font-medium">✅ Your vote has been recorded!</p>
-                      <p className="text-xs text-surface-200 mt-1">The red light confirms your selection. Check the VVPAT slip below.</p>
-                    </motion.div>
-                  )}
-                </div>
-              ) : (
-                /* Narration */
-                <div className="min-h-[120px]">
-                  {sim.narration ? (
-                    <div className="markdown-content text-surface-200 leading-relaxed">{sim.narration}</div>
-                  ) : sim.isNarrating ? (
-                    <div className="flex items-center gap-3 text-surface-200">
-                      <div className="w-5 h-5 border-2 border-primary-400/30 border-t-primary-400 rounded-full animate-spin" />
-                      <span className="text-sm">AI is narrating this step...</span>
-                    </div>
-                  ) : (
-                    <p className="text-surface-200">{step.description}</p>
-                  )}
-                  {sim.isNarrating && sim.narration && <span className="inline-block w-1 h-4 bg-primary-400 animate-pulse align-middle ml-0.5" />}
-                </div>
-              )}
-            </div>
-          )}
-        </motion.div>
-      </AnimatePresence>
+              <div className="flex gap-4">
+                <button
+                  onClick={prevStep}
+                  disabled={currentStep === 1}
+                  className="px-6 py-3 rounded-xl border border-white/10 text-surface-400 hover:bg-white/5 disabled:opacity-0 transition-all"
+                >
+                  Back
+                </button>
+                <button
+                  onClick={nextStep}
+                  disabled={(currentStep === 5 && !hasVoted) || (currentStep === 6 && !showVVPAT)}
+                  className="flex-1 px-6 py-4 bg-primary-500 hover:bg-primary-400 text-white rounded-xl font-bold shadow-xl shadow-primary-500/20 transition-all flex items-center justify-center gap-2 group"
+                >
+                  {currentStep === totalSteps ? 'Complete Process' : 'Continue Journey'}
+                  <span className="group-hover:translate-x-1 transition-transform">→</span>
+                </button>
+              </div>
+            </motion.div>
+          </div>
 
-      {/* Navigation Buttons */}
-      <div className="flex items-center justify-between">
-        <button onClick={sim.prevStep} disabled={sim.currentStep <= 1} className="px-6 py-3 rounded-xl glass text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:bg-white/5 transition-colors" id="sim-prev-btn">
-          ← Previous
-        </button>
-
-        {sim.currentStep === sim.totalSteps ? (
-          <motion.button onClick={sim.resetSimulation} whileHover={{ scale: 1.05 }} className="px-6 py-3 rounded-xl bg-gradient-to-r from-success-500 to-success-400 text-white font-medium text-sm shadow-lg shadow-success-500/20" id="sim-restart-btn">
-            🎉 Complete — Start Over
-          </motion.button>
-        ) : (
-          <button onClick={sim.nextStep} disabled={sim.currentStep === 5 && !sim.hasVoted} className="px-6 py-3 rounded-xl bg-gradient-to-r from-primary-500 to-primary-600 text-white text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed hover:shadow-lg hover:shadow-primary-500/25 transition-all" id="sim-next-btn">
-            Next Step →
-          </button>
-        )}
-      </div>
-
-      {/* Step thumbnails */}
-      <div className="mt-8 grid grid-cols-7 gap-2">
-        {SIMULATION_STEPS.map((s) => (
-          <button key={s.id} onClick={() => { /* allow click on completed steps */ }} className={`py-2 rounded-lg text-center text-xs transition-all ${s.id === sim.currentStep ? 'glass border-primary-500/30 text-primary-300' : sim.completedSteps.has(s.id) ? 'bg-success-500/10 text-success-400' : 'bg-white/[0.02] text-surface-200'}`} aria-label={`Step ${s.id}: ${s.name}`}>
-            <span className="text-lg block">{s.icon}</span>
-          </button>
-        ))}
+          {/* Facts Sidebar */}
+          <div className="lg:col-span-1">
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="glass rounded-3xl p-8 border-l-4 border-accent-500 h-full"
+            >
+              <div className="flex items-center gap-2 mb-6">
+                <span className="text-accent-500 text-lg">✅</span>
+                <h3 className="text-accent-500 font-bold uppercase tracking-widest text-[10px]">Verified ECI Facts</h3>
+              </div>
+              <ul className="space-y-4">
+                {stepData.facts.map((fact, i) => (
+                  <li key={i} className="flex gap-3 text-sm text-surface-400 leading-snug">
+                    <span className="text-accent-500/50 shrink-0">•</span>
+                    {fact}
+                  </li>
+                ))}
+              </ul>
+            </motion.div>
+          </div>
+        </div>
       </div>
     </div>
   );

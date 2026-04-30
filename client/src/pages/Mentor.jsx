@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useChat } from '../hooks/useChat';
@@ -12,6 +12,7 @@ export default function Mentor() {
   const voice = useVoice();
   const messagesEndRef = useRef(null);
   const [searchParams] = useSearchParams();
+  const [lang, setLang] = useState('en');
 
   useEffect(() => {
     if (searchParams.get('mode') === 'nervous' && chat.mode !== 'nervous') {
@@ -34,8 +35,15 @@ export default function Mentor() {
           </p>
         </div>
         <div className="flex items-center gap-4">
-          <button 
-            onClick={chat.toggleMode} 
+          <button
+            onClick={() => setLang((l) => (l === 'en' ? 'hi' : 'en'))}
+            className={`px-4 py-2 rounded-full text-xs font-medium transition-elegant ${lang === 'hi' ? 'bg-accent-500/10 text-accent-400' : 'bg-white/5 text-surface-200 hover:bg-white/10'}`}
+            title="Toggle language"
+          >
+            {lang === 'en' ? '🇮🇳 हिंदी' : '🇬🇧 English'}
+          </button>
+          <button
+            onClick={chat.toggleMode}
             className={`px-4 py-2 rounded-full text-xs font-medium transition-elegant ${chat.mode === 'nervous' ? 'bg-primary-500/10 text-primary-400' : 'bg-white/5 text-surface-200 hover:bg-white/10'}`}
           >
             {chat.mode === 'nervous' ? '🫂 Gentle' : '😊 Default'}
@@ -81,7 +89,7 @@ export default function Mentor() {
 
       {/* Input */}
       <div className="mt-8 pt-6 border-t border-white/5">
-        <ChatInput onSend={chat.sendMessage} isLoading={chat.isLoading} voice={voice} />
+        <ChatInput onSend={(text) => chat.sendMessage(text, lang)} isLoading={chat.isLoading} voice={voice} lang={lang} />
       </div>
     </div>
   );

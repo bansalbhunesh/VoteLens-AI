@@ -1,8 +1,5 @@
-/**
- * ChatBubble — Message bubbles for AI and user.
- */
-
 import { motion } from 'framer-motion';
+import MarkdownText from './MarkdownText';
 
 export default function ChatBubble({ message, index }) {
   const isUser = message.role === 'user';
@@ -10,14 +7,14 @@ export default function ChatBubble({ message, index }) {
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20, scale: 0.95 }}
+      initial={{ opacity: 0, y: 16, scale: 0.97 }}
       animate={{ opacity: 1, y: 0, scale: 1 }}
-      transition={{ duration: 0.3, delay: index * 0.05 }}
+      transition={{ duration: 0.3, delay: Math.min(index * 0.04, 0.3) }}
       className={`flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`}
       role="listitem"
       aria-label={`${isUser ? 'Your' : 'AI'} message`}
     >
-      <div className={`flex gap-3 max-w-[80%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
+      <div className={`flex gap-3 max-w-[82%] ${isUser ? 'flex-row-reverse' : 'flex-row'}`}>
         {/* Avatar */}
         <div
           className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 text-sm ${
@@ -30,7 +27,7 @@ export default function ChatBubble({ message, index }) {
           {isUser ? '👤' : '🗳️'}
         </div>
 
-        {/* Message */}
+        {/* Bubble */}
         <div
           className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
             isUser
@@ -41,17 +38,21 @@ export default function ChatBubble({ message, index }) {
           }`}
         >
           {message.isStreaming && !message.content ? (
-            <div className="flex gap-1 py-1" aria-label="AI is thinking">
+            <div className="flex gap-1.5 py-1 items-center" aria-label="AI is thinking">
               <span className="typing-dot w-2 h-2 bg-primary-400 rounded-full" />
               <span className="typing-dot w-2 h-2 bg-primary-400 rounded-full" />
               <span className="typing-dot w-2 h-2 bg-primary-400 rounded-full" />
             </div>
           ) : (
-            <div className="markdown-content whitespace-pre-wrap">{message.content}</div>
-          )}
-
-          {message.isStreaming && message.content && (
-            <span className="inline-block w-1 h-4 bg-primary-400 ml-0.5 animate-pulse align-middle" />
+            <>
+              {isUser
+                ? <span>{message.content}</span>
+                : <MarkdownText content={message.content} />
+              }
+              {message.isStreaming && message.content && (
+                <span className="inline-block w-0.5 h-4 bg-primary-400 ml-0.5 animate-pulse align-middle" />
+              )}
+            </>
           )}
         </div>
       </div>

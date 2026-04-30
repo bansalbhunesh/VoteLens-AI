@@ -11,6 +11,7 @@ import {
   verifyInformation,
   getElectionInfo,
   getSimulationNarration,
+  generateQuiz,
 } from './gemini.js';
 
 const router = Router();
@@ -30,7 +31,7 @@ const upload = multer({
  */
 router.post('/chat', async (req, res) => {
   try {
-    const { messages, mode = 'normal' } = req.body;
+    const { messages, mode = 'normal', lang = 'en' } = req.body;
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'Messages array is required.' });
@@ -44,7 +45,7 @@ router.post('/chat', async (req, res) => {
       'X-Accel-Buffering': 'no',
     });
 
-    const stream = chatWithMentor(messages, mode);
+    const stream = chatWithMentor(messages, mode, lang);
     for await (const chunk of stream) {
       res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
     }
@@ -128,11 +129,11 @@ router.post('/election-info', async (req, res) => {
 /**
  * POST /api/simulate
  * Get narration for a simulation step. Streams via SSE.
- * Body: { step: number, stepName: string }
+ * Body: { step: number, stepName: string, facts: string[] }
  */
 router.post('/simulate', async (req, res) => {
   try {
-    const { step, stepName } = req.body;
+    const { step, stepName, facts = [] } = req.body;
 
     if (!step || !stepName) {
       return res.status(400).json({ error: 'Step number and name are required.' });
@@ -145,7 +146,7 @@ router.post('/simulate', async (req, res) => {
       'X-Accel-Buffering': 'no',
     });
 
-    const stream = getSimulationNarration(step, stepName);
+    const stream = getSimulationNarration(step, stepName, facts);
     for await (const chunk of stream) {
       res.write(`data: ${JSON.stringify({ text: chunk })}\n\n`);
     }
@@ -159,6 +160,25 @@ router.post('/simulate', async (req, res) => {
     } else {
       res.end();
     }
+  }
+});
+
+/**
+ * POST /api/quiz
+ * Generate 5 MCQ quiz questions using Gemini JSON structured output.
+ * Body: { topic: string }
+ */
+router.post('/quiz', async (req, res) => {
+  try {
+    const { topic } = req.body;
+    if (!topic || typeof topic !== 'string' || topic.trim().length === 0) {
+      return res.status(400).json({ error: 'Topic is required.' });
+    }
+    const questions = await generateQuiz(topic.trim());
+    res.json({ questions });
+  } catch (error) {
+    console.error('Quiz error:', error);
+    res.status(500).json({ error: 'Failed to generate quiz.' });
   }
 });
 

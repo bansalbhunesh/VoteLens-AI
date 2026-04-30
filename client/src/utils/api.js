@@ -9,13 +9,15 @@ const API_BASE = '/api';
  * Makes a streaming chat request. Returns an async generator of text chunks.
  * @param {Array<{role: string, content: string}>} messages
  * @param {'normal'|'nervous'} mode
+ * @param {AbortSignal} [signal]
  * @returns {AsyncGenerator<string>}
  */
-export async function* streamChat(messages, mode = 'normal') {
+export async function* streamChat(messages, mode = 'normal', signal, lang = 'en') {
   const response = await fetch(`${API_BASE}/chat`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages, mode }),
+    body: JSON.stringify({ messages, mode, lang }),
+    signal,
   });
 
   if (!response.ok) {
@@ -98,16 +100,40 @@ export async function verifyClaim(claim) {
 }
 
 /**
+ * Generate quiz questions for a topic using Gemini JSON mode.
+ * @param {string} topic
+ * @returns {Promise<Array>}
+ */
+export async function generateQuiz(topic) {
+  const response = await fetch(`${API_BASE}/quiz`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ topic }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Quiz failed' }));
+    throw new Error(err.error || 'Failed to generate quiz');
+  }
+
+  const data = await response.json();
+  return data.questions;
+}
+
+/**
  * Stream simulation narration for a step.
  * @param {number} step
  * @param {string} stepName
+ * @param {string[]} facts
+ * @param {AbortSignal} [signal]
  * @returns {AsyncGenerator<string>}
  */
-export async function* streamSimulation(step, stepName) {
+export async function* streamSimulation(step, stepName, facts = [], signal) {
   const response = await fetch(`${API_BASE}/simulate`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ step, stepName }),
+    body: JSON.stringify({ step, stepName, facts }),
+    signal,
   });
 
   if (!response.ok) {

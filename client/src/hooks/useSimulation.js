@@ -2,7 +2,7 @@
  * useSimulation — State machine for the voting simulation.
  */
 
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import { streamSimulation } from '../utils/api';
 import { SIMULATION_STEPS } from '../utils/constants';
 
@@ -14,7 +14,16 @@ export function useSimulation() {
   const [hasVoted, setHasVoted] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showVVPAT, setShowVVPAT] = useState(false);
-  const abortRef = useRef(false);
+  const abortControllerRef = useRef(null);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (abortControllerRef.current) {
+        abortControllerRef.current.abort();
+      }
+    };
+  }, []);
 
   const totalSteps = SIMULATION_STEPS.length;
 
@@ -28,7 +37,9 @@ export function useSimulation() {
     setHasVoted(false);
     setSelectedCandidate(null);
     setShowVVPAT(false);
-    abortRef.current = false;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
   }, []);
 
   /**
@@ -40,18 +51,23 @@ export function useSimulation() {
 
     setIsNarrating(true);
     setNarration('');
-    abortRef.current = false;
+    
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
 
     try {
       let fullText = '';
-      const stream = streamSimulation(step, stepData.name);
+      const stream = streamSimulation(step, stepData.name, stepData.facts, abortControllerRef.current.signal);
 
       for await (const chunk of stream) {
-        if (abortRef.current) break;
         fullText += chunk;
         setNarration(fullText);
       }
     } catch (error) {
+      if (error.name === 'AbortError') return; // Ignore abort errors
+
       console.error('Narration error:', error);
       setNarration(stepData.description);
     } finally {
@@ -95,7 +111,9 @@ export function useSimulation() {
    * Reset everything.
    */
   const resetSimulation = useCallback(() => {
-    abortRef.current = true;
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
     setCurrentStep(0);
     setNarration('');
     setIsNarrating(false);

@@ -4,11 +4,23 @@
 
 import { motion } from 'framer-motion';
 
-export default function VoiceButton({ isListening, onStart, onStop, disabled }) {
+export default function VoiceButton({ voice, onTranscript, disabled, lang = 'en-IN' }) {
+  const { isListening, startListening, stopListening, isSupported } = voice;
+
+  if (!isSupported) return null;
+
+  const handleClick = () => {
+    if (isListening) {
+      stopListening();
+    } else {
+      startListening(onTranscript, lang);
+    }
+  };
+
   return (
     <motion.button
       type="button"
-      onClick={isListening ? onStop : onStart}
+      onClick={handleClick}
       disabled={disabled}
       className={`relative w-10 h-10 rounded-xl flex items-center justify-center transition-all ${
         isListening

@@ -10,7 +10,9 @@ import {
   VERIFICATION_PROMPT,
   SIMULATION_NARRATOR_PROMPT,
   IMAGE_ANALYSIS_PROMPT,
+  QUIZ_PROMPT,
 } from './prompts.js';
+import { withRetries } from './utils/ai-wrapper.js';
 
 /** @type {GoogleGenAI|null} */
 let ai = null;
@@ -29,7 +31,7 @@ function getClient() {
   return ai;
 }
 
-const MODEL = 'gemini-2.0-flash';
+const MODEL = 'gemini-2.5-flash';
 
 /**
  * Selects the appropriate system prompt based on mode.
@@ -42,13 +44,18 @@ function getSystemPrompt(mode) {
 
 /**
  * Chat with the AI Election Mentor. Returns a streaming response.
+ * Guardrails are enforced by the system prompt — no blocking pre-check needed.
  * @param {Array<{role: string, content: string}>} messages - Conversation history
  * @param {'normal'|'nervous'} mode - Mentor personality mode
+ * @param {'en'|'hi'} lang - Response language
  * @returns {AsyncGenerator<string>} Streamed text chunks
  */
-export async function* chatWithMentor(messages, mode = 'normal') {
+export async function* chatWithMentor(messages, mode = 'normal', lang = 'en') {
   const client = getClient();
-  const systemPrompt = getSystemPrompt(mode);
+  const basePrompt = getSystemPrompt(mode);
+  const systemPrompt = lang === 'hi'
+    ? `${basePrompt}\n\nIMPORTANT: Respond in Hindi (Devanagari script). Use simple, conversational Hindi.`
+    : basePrompt;
 
   const contents = messages.map((msg) => ({
     role: msg.role === 'user' ? 'user' : 'model',
@@ -83,28 +90,29 @@ export async function* chatWithMentor(messages, mode = 'normal') {
 export async function analyzeImage(imageBuffer, mimeType, userPrompt = '') {
   const client = getClient();
 
-  const imagePart = {
-    inlineData: {
-      data: imageBuffer.toString('base64'),
-      mimeType,
-    },
-  };
+  const textContent = userPrompt
+    ? `${userPrompt}\n\nAnalyze the uploaded image with this context in mind.`
+    : 'Analyze this image related to the Indian election process.';
 
-  const textPart = {
-    text: userPrompt
-      ? `${userPrompt}\n\nAnalyze the uploaded image with this context in mind.`
-      : 'Analyze this image related to the Indian election process.',
-  };
-
-  const response = await client.models.generateContent({
+  const response = await withRetries((signal) => client.models.generateContent({
     model: MODEL,
-    contents: [{ role: 'user', parts: [imagePart, textPart] }],
+    contents: [
+      {
+        inlineData: {
+          data: imageBuffer.toString('base64'),
+          mimeType,
+        },
+      },
+      textContent
+    ],
     config: {
       systemInstruction: IMAGE_ANALYSIS_PROMPT,
       temperature: 0.4,
       maxOutputTokens: 1500,
     },
-  });
+    // The google/genai sdk might not take AbortSignal directly in config, but we can pass it if supported
+    // Though for now withRetries will enforce timeout wrapper
+  }), { timeoutMs: 30000, retries: 2 });
 
   return response.text;
 }
@@ -117,7 +125,7 @@ export async function analyzeImage(imageBuffer, mimeType, userPrompt = '') {
 export async function verifyInformation(claim) {
   const client = getClient();
 
-  const response = await client.models.generateContent({
+  const response = await withRetries(() => client.models.generateContent({
     model: MODEL,
     contents: `Verify this claim about the Indian election process:\n\n"${claim}"`,
     config: {
@@ -126,7 +134,7 @@ export async function verifyInformation(claim) {
       temperature: 0.2,
       maxOutputTokens: 1500,
     },
-  });
+  }), { timeoutMs: 20000, retries: 2 });
 
   const sources = [];
   const candidate = response.candidates?.[0];
@@ -156,7 +164,7 @@ export async function verifyInformation(claim) {
 export async function getElectionInfo(query) {
   const client = getClient();
 
-  const response = await client.models.generateContent({
+  const response = await withRetries(() => client.models.generateContent({
     model: MODEL,
     contents: query,
     config: {
@@ -165,7 +173,7 @@ export async function getElectionInfo(query) {
       temperature: 0.3,
       maxOutputTokens: 1024,
     },
-  });
+  }), { timeoutMs: 20000, retries: 2 });
 
   const sources = [];
   const candidate = response.candidates?.[0];
@@ -187,18 +195,45 @@ export async function getElectionInfo(query) {
 }
 
 /**
+ * Generate 5 MCQ questions about a topic using Gemini JSON structured output.
+ * @param {string} topic - The quiz topic
+ * @returns {Promise<Array>} Array of question objects
+ */
+export async function generateQuiz(topic) {
+  const client = getClient();
+
+  const response = await withRetries(() => client.models.generateContent({
+    model: MODEL,
+    contents: `Generate exactly 5 multiple-choice quiz questions about: "${topic}" for Indian voters.`,
+    config: {
+      systemInstruction: QUIZ_PROMPT,
+      responseMimeType: 'application/json',
+      temperature: 0.65,
+      maxOutputTokens: 2500,
+    },
+  }), { timeoutMs: 30000, retries: 2 });
+
+  return JSON.parse(response.text);
+}
+
+/**
  * Generate simulation narration for a specific step.
  * @param {number} step - Step number (1-7)
  * @param {string} stepName - Human-readable step name
+ * @param {string[]} facts - Array of facts to include in the narration
  * @returns {AsyncGenerator<string>} Streamed narration
  */
-export async function* getSimulationNarration(step, stepName) {
+export async function* getSimulationNarration(step, stepName, facts = []) {
   const client = getClient();
   const prompt = SIMULATION_NARRATOR_PROMPT.replace('{step}', String(step));
 
+  const factContext = facts.length > 0
+    ? `\n\nEnsure you weave these verified facts into the narration naturally:\n- ${facts.join('\n- ')}`
+    : '';
+
   const response = await client.models.generateContentStream({
     model: MODEL,
-    contents: `Narrate step ${step}: ${stepName}. Make it vivid and immersive.`,
+    contents: `Narrate step ${step}: ${stepName}. Make it vivid and immersive.${factContext}`,
     config: {
       systemInstruction: prompt,
       temperature: 0.8,

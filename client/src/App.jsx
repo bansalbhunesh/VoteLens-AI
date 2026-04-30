@@ -4,6 +4,7 @@ import Landing from './pages/Landing';
 import Simulation from './pages/Simulation';
 import Verify from './pages/Verify';
 import Mentor from './pages/Mentor';
+import Quiz from './pages/Quiz';
 
 export default function App() {
   return (
@@ -14,6 +15,7 @@ export default function App() {
           <Route path="/simulate" element={<Simulation />} />
           <Route path="/verify" element={<Verify />} />
           <Route path="/mentor" element={<Mentor />} />
+          <Route path="/quiz" element={<Quiz />} />
         </Route>
       </Routes>
     </BrowserRouter>

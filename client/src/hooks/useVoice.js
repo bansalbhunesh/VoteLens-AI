@@ -29,7 +29,7 @@ export function useVoice() {
    * Start listening for voice input.
    * @param {Function} onResult - Callback with final transcript
    */
-  const startListening = useCallback((onResult) => {
+  const startListening = useCallback((onResult, lang = 'en-IN') => {
     if (!SpeechRecognition) return;
 
     // Cancel any ongoing speech
@@ -41,7 +41,7 @@ export function useVoice() {
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
     recognition.interimResults = true;
-    recognition.lang = 'en-IN';
+    recognition.lang = lang;
 
     recognition.onstart = () => {
       setIsListening(true);
@@ -96,7 +96,7 @@ export function useVoice() {
    * Speak text aloud using browser TTS.
    * @param {string} text
    */
-  const speak = useCallback((text) => {
+  const speak = useCallback((text, lang = 'en-IN') => {
     if (!synthRef.current || !text) return;
 
     // Cancel any ongoing speech
@@ -111,7 +111,7 @@ export function useVoice() {
       .trim();
 
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'en-IN';
+    utterance.lang = lang;
     utterance.rate = 0.95;
     utterance.pitch = 1.0;
 

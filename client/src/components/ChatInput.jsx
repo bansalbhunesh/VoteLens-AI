@@ -6,9 +6,10 @@ import { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import VoiceButton from './VoiceButton';
 
-export default function ChatInput({ onSend, isLoading, voice }) {
+export default function ChatInput({ onSend, isLoading, voice, lang = 'en' }) {
   const [text, setText] = useState('');
   const textareaRef = useRef(null);
+  const voiceLang = lang === 'hi' ? 'hi-IN' : 'en-IN';
 
   const handleSubmit = (e) => {
     e?.preventDefault();
@@ -35,7 +36,7 @@ export default function ChatInput({ onSend, isLoading, voice }) {
     <div className="relative group max-w-3xl mx-auto">
       <div className="glass rounded-[32px] p-2 flex items-end gap-2 border border-white/5 group-focus-within:border-white/10 transition-colors">
         <div className="p-2">
-          <VoiceButton voice={voice} onTranscript={(t) => setText((prev) => prev + t)} />
+          <VoiceButton voice={voice} onTranscript={(t) => setText((prev) => prev + t)} lang={voiceLang} />
         </div>
         
         <textarea
