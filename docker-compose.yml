@@ -2,10 +2,9 @@ version: '3.9'
 
 services:
   api:
-    build:
-      context: .
-      target: builder
-    command: node server.js
+    image: node:20-alpine
+    working_dir: /app
+    command: sh -c "npm install && node server.js"
     ports:
       - '3001:3001'
     environment:
@@ -15,8 +14,9 @@ services:
     env_file:
       - .env
     volumes:
-      - ./api:/app/api
-      - ./server.js:/app/server.js
+      - .:/app
+      - /app/node_modules
+      - /app/client
     restart: unless-stopped
 
   client:

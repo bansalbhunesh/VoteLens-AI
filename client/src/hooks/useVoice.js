@@ -14,12 +14,10 @@ const SpeechRecognition =
 
 export function useVoice() {
   const [isListening, setIsListening] = useState(false);
-  const [isSpeaking, setIsSpeaking] = useState(false);
   const [transcript, setTranscript] = useState('');
   const [isSupported, setIsSupported] = useState(false);
 
   const recognitionRef = useRef(null);
-  const synthRef = useRef(typeof window !== 'undefined' ? window.speechSynthesis : null);
 
   useEffect(() => {
     setIsSupported(!!SpeechRecognition);
@@ -31,12 +29,6 @@ export function useVoice() {
    */
   const startListening = useCallback((onResult, lang = 'en-IN') => {
     if (!SpeechRecognition) return;
-
-    // Cancel any ongoing speech
-    if (synthRef.current) {
-      synthRef.current.cancel();
-      setIsSpeaking(false);
-    }
 
     const recognition = new SpeechRecognition();
     recognition.continuous = false;
@@ -92,62 +84,18 @@ export function useVoice() {
     }
   }, []);
 
-  /**
-   * Speak text aloud using browser TTS.
-   * @param {string} text
-   */
-  const speak = useCallback((text, lang = 'en-IN') => {
-    if (!synthRef.current || !text) return;
-
-    // Cancel any ongoing speech
-    synthRef.current.cancel();
-
-    // Clean markdown-style formatting from text
-    const cleanText = text
-      .replace(/\*\*(.*?)\*\*/g, '$1')
-      .replace(/\*(.*?)\*/g, '$1')
-      .replace(/#{1,6}\s/g, '')
-      .replace(/[🗳️✅📋🏛️🪪✍️📄🎉❌⭐🔔🏠🌸🌿⚠️]/gu, '')
-      .trim();
-
-    const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = lang;
-    utterance.rate = 0.95;
-    utterance.pitch = 1.0;
-
-    utterance.onstart = () => setIsSpeaking(true);
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-
-    synthRef.current.speak(utterance);
-  }, []);
-
-  /**
-   * Stop speaking.
-   */
-  const stopSpeaking = useCallback(() => {
-    if (synthRef.current) {
-      synthRef.current.cancel();
-      setIsSpeaking(false);
-    }
-  }, []);
-
   // Cleanup on unmount
   useEffect(() => {
     return () => {
       if (recognitionRef.current) recognitionRef.current.abort();
-      if (synthRef.current) synthRef.current.cancel();
     };
   }, []);
 
   return {
     isListening,
-    isSpeaking,
     transcript,
     isSupported,
     startListening,
     stopListening,
-    speak,
-    stopSpeaking,
   };
 }
