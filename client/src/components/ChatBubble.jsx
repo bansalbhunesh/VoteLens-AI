@@ -71,7 +71,7 @@ export default function ChatBubble({ message, index }) {
                   title={s.title}
                 >
                   <span className="text-[8px] opacity-60">🔗</span>
-                  <span className="truncate">{s.title || new URL(s.url).hostname}</span>
+                  <span className="truncate">{s.title || (() => { try { return new URL(s.url).hostname; } catch { return s.url; } })()}</span>
                 </a>
               ))}
             </div>

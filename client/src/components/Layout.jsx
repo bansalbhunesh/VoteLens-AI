@@ -87,7 +87,7 @@ export default function Layout() {
       <footer className="border-t border-white/5 py-6 px-6" role="contentinfo">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-2">
           <p className="text-xs text-surface-500">
-            Built for <span className="text-primary-400">Google PromptWars Hackathon 2026</span>
+            © {new Date().getFullYear()} VoteLens AI
           </p>
           <p className="text-xs text-surface-600">
             Educational use only · Non-partisan · Powered by Gemini 2.5 Flash
