@@ -4,7 +4,7 @@ import FileUpload from '../components/FileUpload';
 import { analyzeImage, verifyClaim } from '../utils/api';
 
 export default function Verify() {
-  const [tab, setTab] = useState('verify'); // 'verify' | 'analyze'
+  const [tab, setTab] = useState('verify');
   const [claimText, setClaimText] = useState('');
   const [result, setResult] = useState(null);
   const [sources, setSources] = useState([]);
@@ -44,73 +44,91 @@ export default function Verify() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto px-4 py-8">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-black mb-2">Verify & Analyze</h1>
-        <p className="text-surface-200">Fact-check election claims or analyze voting documents with AI.</p>
+    <div className="max-w-4xl mx-auto px-6 py-12">
+      <div className="mb-12">
+        <h1 className="text-3xl font-light tracking-tight mb-2 text-surface-50/90">Verify</h1>
+        <p className="text-sm text-surface-200/60 font-light">Fact-check rumors or analyze documents with precision.</p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-6 glass rounded-xl p-1.5" role="tablist">
+      {/* Elegant Tabs */}
+      <div className="flex gap-8 mb-12 border-b border-white/5" role="tablist">
         {[
-          { id: 'verify', label: '🔍 Fact-Check a Claim', desc: 'Verify election information' },
-          { id: 'analyze', label: '📸 Analyze a Document', desc: 'Upload voter slip or screenshot' },
+          { id: 'verify', label: 'Fact-Check' },
+          { id: 'analyze', label: 'Analyze Document' },
         ].map((t) => (
-          <button key={t.id} onClick={() => { setTab(t.id); setResult(null); setError(''); }} role="tab" aria-selected={tab === t.id} className={`flex-1 py-3 px-4 rounded-lg text-sm font-medium transition-all ${tab === t.id ? 'bg-primary-600/20 text-primary-300 shadow-lg shadow-primary-500/10' : 'text-surface-200 hover:text-white hover:bg-white/5'}`} id={`tab-${t.id}`}>
+          <button
+            key={t.id}
+            onClick={() => { setTab(t.id); setResult(null); setError(''); }}
+            className={`pb-4 text-sm font-medium transition-elegant relative ${
+              tab === t.id ? 'text-surface-50' : 'text-surface-200/40 hover:text-surface-200/60'
+            }`}
+          >
             {t.label}
+            {tab === t.id && (
+              <motion.div layoutId="tab-underline" className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary-500/60" />
+            )}
           </button>
         ))}
       </div>
 
-      {/* Tab Content */}
       <AnimatePresence mode="wait">
-        <motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}>
+        <motion.div 
+          key={tab} 
+          initial={{ opacity: 0, y: 10 }} 
+          animate={{ opacity: 1, y: 0 }} 
+          exit={{ opacity: 0, y: -10 }}
+          transition={{ duration: 0.5 }}
+        >
           {tab === 'verify' ? (
-            <div className="glass rounded-2xl p-6">
-              <label htmlFor="claim-input" className="block text-sm font-medium text-surface-200 mb-2">Paste a claim, WhatsApp message, or election rumor:</label>
-              <textarea id="claim-input" value={claimText} onChange={(e) => setClaimText(e.target.value)} placeholder="e.g., 'EVMs can be hacked using a smartphone app'" className="w-full bg-surface-900/50 rounded-xl p-4 text-sm text-surface-50 placeholder-surface-200 border border-white/5 focus:border-primary-500/50 focus:outline-none resize-none min-h-[100px]" rows={4} />
-              <div className="flex items-center justify-between mt-4">
-                <p className="text-xs text-surface-200">Uses Google Search grounding for real-time verification</p>
-                <motion.button onClick={handleVerify} disabled={!claimText.trim() || isLoading} whileTap={{ scale: 0.95 }} className="px-6 py-2.5 bg-gradient-to-r from-primary-500 to-primary-600 text-white rounded-xl text-sm font-medium disabled:opacity-30 disabled:cursor-not-allowed" id="verify-btn">
-                  {isLoading ? 'Verifying...' : '🔍 Verify'}
-                </motion.button>
+            <div className="space-y-6">
+              <textarea
+                value={claimText}
+                onChange={(e) => setClaimText(e.target.value)}
+                placeholder="Paste an election rumor or claim..."
+                className="w-full bg-surface-800/20 rounded-[32px] p-8 text-lg text-surface-50 placeholder-surface-200/20 border border-white/5 focus:border-white/10 focus:ring-0 resize-none min-h-[200px] font-light transition-elegant"
+              />
+              <div className="flex justify-end">
+                <button
+                  onClick={handleVerify}
+                  disabled={!claimText.trim() || isLoading}
+                  className="px-10 py-4 bg-surface-50 text-surface-950 rounded-full font-medium transition-elegant disabled:opacity-10"
+                >
+                  {isLoading ? 'Verifying...' : 'Verify Claim'}
+                </button>
               </div>
             </div>
           ) : (
-            <div className="glass rounded-2xl p-6">
-              <p className="text-sm text-surface-200 mb-4">Upload a voter ID, election notice, polling slip, or any election-related image.</p>
+            <div className="glass rounded-[40px] p-12">
               <FileUpload onUpload={handleImageUpload} isLoading={isLoading} />
             </div>
           )}
         </motion.div>
       </AnimatePresence>
 
-      {/* Error */}
-      {error && (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-6 p-4 rounded-xl bg-danger-500/10 border border-danger-500/20 text-danger-400 text-sm" role="alert">
-          {error}
-        </motion.div>
-      )}
-
-      {/* Result */}
+      {/* Results */}
       {result && (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="mt-6">
-          <div className="glass rounded-2xl p-6">
-            <h3 className="text-sm font-bold text-primary-400 uppercase tracking-wider mb-4">
-              {tab === 'verify' ? '🔍 Verification Result' : '📄 Analysis Result'}
-            </h3>
-            <div className="markdown-content text-surface-200 leading-relaxed whitespace-pre-wrap">{result}</div>
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="mt-16 space-y-12">
+          <div className="max-w-prose">
+            <h3 className="text-xs font-medium text-primary-400 uppercase tracking-[0.3em] mb-6">Result</h3>
+            <div className="markdown-content text-xl text-surface-200/80 font-light leading-relaxed">
+              {result}
+            </div>
           </div>
 
-          {/* Sources */}
           {sources.length > 0 && (
-            <div className="mt-4">
-              <h4 className="text-xs font-bold text-surface-200 uppercase tracking-wider mb-3">📚 Sources (Google Search)</h4>
-              <div className="space-y-2">
+            <div>
+              <h4 className="text-xs font-medium text-surface-200/40 uppercase tracking-[0.2em] mb-6">Sources</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {sources.map((s, i) => (
-                  <a key={i} href={s.url} target="_blank" rel="noopener noreferrer" className="block glass rounded-xl p-3 hover:bg-white/[0.04] transition-colors group">
-                    <p className="text-sm text-surface-50 group-hover:text-primary-300 transition-colors">{s.title}</p>
-                    <p className="text-xs text-surface-200 truncate mt-0.5">{s.url}</p>
+                  <a 
+                    key={i} 
+                    href={s.url} 
+                    target="_blank" 
+                    rel="noopener noreferrer" 
+                    className="glass rounded-2xl p-6 hover:bg-white/5 transition-elegant group"
+                  >
+                    <p className="text-sm text-surface-50 group-hover:text-primary-400 transition-colors font-medium mb-1 truncate">{s.title}</p>
+                    <p className="text-xs text-surface-200/30 truncate font-light">{s.url}</p>
                   </a>
                 ))}
               </div>
