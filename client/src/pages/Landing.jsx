@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom';
+import { useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 
 const features = [
@@ -54,6 +55,16 @@ const itemVariants = {
 };
 
 export default function Landing() {
+  const navigate = useNavigate();
+  const [question, setQuestion] = useState('');
+
+  const handleAsk = (e) => {
+    e?.preventDefault();
+    const q = question.trim();
+    if (!q) return;
+    navigate(`/mentor?q=${encodeURIComponent(q)}`);
+  };
+
   return (
     <div className="min-h-[calc(100vh-8rem)] flex flex-col">
 
@@ -123,6 +134,26 @@ export default function Landing() {
                 Talk to Mentor
               </motion.button>
             </Link>
+          </motion.div>
+
+          {/* Ask anything inline */}
+          <motion.div variants={itemVariants} className="mt-8 w-full max-w-lg mx-auto">
+            <p className="text-[10px] text-surface-700 uppercase tracking-widest mb-3 text-center">or ask the AI directly</p>
+            <form onSubmit={handleAsk} className="relative">
+              <input
+                value={question}
+                onChange={(e) => setQuestion(e.target.value)}
+                placeholder="E.g. How do I register to vote? What is NOTA?"
+                className="w-full glass rounded-full px-5 py-3.5 pr-14 text-sm text-surface-50 placeholder-surface-600 border border-white/5 focus:border-white/12 focus:outline-none transition-colors"
+              />
+              <button
+                type="submit"
+                disabled={!question.trim()}
+                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all text-base font-bold disabled:bg-surface-800 disabled:text-surface-700 bg-primary-500 text-white hover:bg-primary-400 enabled:shadow-lg enabled:shadow-primary-500/20"
+              >
+                →
+              </button>
+            </form>
           </motion.div>
         </motion.div>
       </section>

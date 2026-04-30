@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 
 export default function SimulationStage({ step, onAction, data }) {
@@ -256,6 +257,12 @@ function VVPATStage({ candidate, show, secondsLeft }) {
 }
 
 /* ── Step 7: Completion ── */
+const COMPLETION_ACTIONS = [
+  { label: 'Quiz', path: '/quiz', icon: '🧠', color: 'text-primary-400 border-primary-500/20 hover:bg-primary-500/10' },
+  { label: 'Verify', path: '/verify', icon: '🔍', color: 'text-accent-400 border-accent-500/20 hover:bg-accent-500/10' },
+  { label: 'Mentor', path: '/mentor', icon: '💬', color: 'text-success-400 border-success-500/20 hover:bg-success-500/10' },
+];
+
 function CompletionStage() {
   return (
     <div className="flex flex-col items-center gap-4">
@@ -263,7 +270,7 @@ function CompletionStage() {
         initial={{ scale: 0, rotate: -20 }}
         animate={{ scale: 1, rotate: 0 }}
         transition={{ type: 'spring', stiffness: 200, damping: 12 }}
-        className="text-9xl"
+        className="text-8xl"
       >
         🎉
       </motion.div>
@@ -271,7 +278,7 @@ function CompletionStage() {
         initial={{ opacity: 0, y: 10 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
-        className="bg-primary-500/20 text-primary-400 px-6 py-2 rounded-full border border-primary-500/30 font-bold uppercase tracking-widest text-sm"
+        className="bg-primary-500/20 text-primary-400 px-5 py-1.5 rounded-full border border-primary-500/30 font-bold uppercase tracking-widest text-xs"
       >
         Voter Duty Completed
       </motion.div>
@@ -279,9 +286,26 @@ function CompletionStage() {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ delay: 0.7 }}
-        className="text-surface-500 text-xs text-center max-w-[200px]"
+        className="text-surface-500 text-xs text-center max-w-[180px]"
       >
         Your vote is your voice. Democracy thanks you.
+      </motion.div>
+      <motion.div
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 1.0 }}
+        className="flex gap-2 flex-wrap justify-center"
+      >
+        {COMPLETION_ACTIONS.map((a) => (
+          <Link
+            key={a.path}
+            to={a.path}
+            className={`flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border glass text-xs font-medium transition-all ${a.color}`}
+          >
+            <span>{a.icon}</span>
+            <span>{a.label}</span>
+          </Link>
+        ))}
       </motion.div>
     </div>
   );

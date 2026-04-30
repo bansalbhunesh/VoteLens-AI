@@ -4,6 +4,19 @@ import FileUpload from '../components/FileUpload';
 import MarkdownText from '../components/MarkdownText';
 import { analyzeImage, verifyClaim } from '../utils/api';
 
+const RECENT_KEY = 'votelens_recent_claims';
+const MAX_RECENT = 5;
+
+function loadRecent() {
+  try { return JSON.parse(sessionStorage.getItem(RECENT_KEY) || '[]'); } catch { return []; }
+}
+function addRecent(list, claim) {
+  const trimmed = claim.slice(0, 120);
+  const updated = [trimmed, ...list.filter((c) => c !== trimmed)].slice(0, MAX_RECENT);
+  try { sessionStorage.setItem(RECENT_KEY, JSON.stringify(updated)); } catch {}
+  return updated;
+}
+
 export default function Verify() {
   const [tab, setTab] = useState('verify');
   const [claimText, setClaimText] = useState('');
@@ -12,6 +25,7 @@ export default function Verify() {
   const [isLoading, setIsLoading] = useState(false);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState('');
+  const [recentClaims, setRecentClaims] = useState(() => loadRecent());
 
   const parseVerdict = (text) => {
     if (!text) return null;
@@ -44,6 +58,7 @@ export default function Verify() {
       const data = await verifyClaim(claimText.trim());
       setResult(data.text);
       setSources(data.sources || []);
+      setRecentClaims(addRecent(recentClaims, claimText.trim()));
     } catch (err) {
       setError(err.message || 'Verification failed');
     } finally {
@@ -103,20 +118,39 @@ export default function Verify() {
           transition={{ duration: 0.5 }}
         >
           {tab === 'verify' ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               <textarea
                 value={claimText}
                 onChange={(e) => setClaimText(e.target.value)}
-                placeholder="Paste an election rumor or claim..."
-                className="w-full bg-surface-800/20 rounded-[32px] p-8 text-lg text-surface-50 placeholder-surface-200/20 border border-white/5 focus:border-white/10 focus:ring-0 resize-none min-h-[200px] font-light transition-elegant"
+                placeholder="Paste an election rumour or claim to fact-check…"
+                className="w-full bg-surface-800/20 rounded-[32px] p-8 text-lg text-surface-50 placeholder-surface-200/20 border border-white/5 focus:border-white/10 focus:ring-0 resize-none min-h-[180px] font-light transition-elegant"
               />
+
+              {/* Recent checks */}
+              {recentClaims.length > 0 && !result && (
+                <div className="flex flex-wrap items-center gap-2 px-1">
+                  <span className="text-[10px] text-surface-700 uppercase tracking-wider shrink-0">Recent:</span>
+                  {recentClaims.map((claim, i) => (
+                    <button
+                      key={i}
+                      onClick={() => setClaimText(claim)}
+                      className="text-[11px] text-surface-500 hover:text-surface-200 px-2.5 py-1 rounded-full border border-white/[0.06] hover:border-white/15 hover:bg-white/[0.04] transition-all max-w-[220px] truncate text-left"
+                      title={claim}
+                    >
+                      {claim}
+                    </button>
+                  ))}
+                </div>
+              )}
+
               <div className="flex justify-end">
                 <button
                   onClick={handleVerify}
                   disabled={!claimText.trim() || isLoading}
-                  className="px-10 py-4 bg-surface-50 text-surface-950 rounded-full font-medium transition-elegant disabled:opacity-10"
+                  className="px-10 py-4 bg-surface-50 text-surface-950 rounded-full font-medium transition-elegant disabled:opacity-10 flex items-center gap-2"
                 >
-                  {isLoading ? 'Verifying...' : 'Verify Claim'}
+                  {isLoading && <div className="w-4 h-4 border-2 border-surface-600 border-t-surface-900 rounded-full animate-spin" />}
+                  {isLoading ? 'Verifying…' : 'Verify Claim'}
                 </button>
               </div>
             </div>
