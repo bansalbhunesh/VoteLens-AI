@@ -1,7 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { generateQuiz } from '../utils/api';
 import { QUIZ_TOPICS } from '../utils/constants';
+import { useGlobalContext } from '../hooks/useGlobalContext';
 
 const GRADES = [
   { min: 5, label: 'Election Expert',  icon: '🏆', color: 'text-accent-400',   bg: 'bg-accent-500/10 border-accent-500/30' },
@@ -72,11 +74,25 @@ export default function Quiz() {
   const [error, setError] = useState('');
   const [copied, setCopied] = useState(false);
   const [quizHistory, setQuizHistory] = useState(() => loadHistory());
-  const [prevLast, setPrevLast] = useState(null); // last score on this topic before current attempt
+  const [prevLast, setPrevLast] = useState(null);
+  const [searchParams] = useSearchParams();
+  const ctx = useGlobalContext();
+  const didInitRef = useRef(false);
 
   const score = Object.entries(answers).filter(
     ([i, ans]) => questions[parseInt(i)]?.correct === ans
   ).length;
+
+  useEffect(() => {
+    const t = searchParams.get('topic');
+    if (t && !didInitRef.current && phase === 'select') {
+      const found = QUIZ_TOPICS.find((q) => q.id === t);
+      if (found) {
+        didInitRef.current = true;
+        handleTopicSelect(found);
+      }
+    }
+  }, [searchParams, phase]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleTopicSelect = async (topic) => {
     setSelectedTopic(topic);
@@ -110,6 +126,7 @@ export default function Quiz() {
     } else {
       const newHistory = saveScore(selectedTopic.id, score, questions.length);
       setQuizHistory(newHistory);
+      ctx.recordQuizResult(selectedTopic.label, score, questions.length);
       setPhase('results');
     }
   }, [currentQ, questions.length, selectedTopic, score]);

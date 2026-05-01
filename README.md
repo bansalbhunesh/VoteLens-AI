@@ -1,224 +1,230 @@
 # 🗳️ VoteLens AI
 
-**An AI Election Mentor that Simulates, Explains, and Verifies the Indian Election Process.**
-
-> Not a chatbot. An interactive learning experience for every citizen.
-
-[![Powered by Gemini](https://img.shields.io/badge/Powered%20by-Google%20Gemini-4285F4?style=flat-square&logo=google)](https://ai.google.dev/)
-[![Deployed on Cloud Run](https://img.shields.io/badge/Deployed%20on-Cloud%20Run-4285F4?style=flat-square&logo=googlecloud)](https://cloud.google.com/run)
-
----
-
-## 🎯 Chosen Vertical
-
-**Election Process Education** — Create an assistant that helps users understand the election process, timelines, and steps in an interactive and easy-to-follow way.
+<p align="center">
+  <img src="https://img.shields.io/badge/Powered%20by-Gemini%202.5%20Flash-4285F4?style=for-the-badge&logo=google" alt="Powered by Gemini" />
+  <img src="https://img.shields.io/badge/Deployed%20on-Cloud%20Run-4285F4?style=for-the-badge&logo=googlecloud" alt="Deployed on Cloud Run" />
+  <img src="https://img.shields.io/badge/Accessibility-Aria%20Optimized-10b981?style=for-the-badge&logo=accessibility" alt="Accessibility Optimized" />
+</p>
 
 ---
 
-## 💡 Approach & Logic
-
-### The Problem
-People don't struggle because election information is *unavailable* — they struggle because they feel **overwhelmed, intimidated, and confused**. Especially first-time voters, elderly users, and digitally inexperienced citizens.
-
-### Our Solution
-VoteLens AI is a **human-centered AI election experience** that goes beyond Q&A. It creates an immersive, emotionally intelligent learning journey using three pillars:
-
-| Pillar | What It Does | Gemini Feature Used |
-|--------|-------------|-------------------|
-| **🗳️ Simulate** | Interactive virtual polling booth walkthrough with clickable EVM | Streaming generation |
-| **🔍 Verify** | Fact-check election rumors and analyze voter documents | Google Search grounding + Multimodal vision |
-| **💬 Explain** | Conversational AI mentor with voice support and emotional intelligence | Streaming chat + Web Speech API |
-
-### Key Differentiator
-**"Google Maps for voting"** — not just another Q&A bot. Users don't just get answers — they *experience* the voting process.
+## 📖 Table of Contents
+1. [🌟 The Vision](#-the-vision)
+2. [🤔 The Problem](#-the-problem)
+3. [💡 The Solution](#-the-solution)
+4. [🎯 How It's Different](#-how-its-different-winner-features)
+5. [🏗️ Technical Architecture](#️-technical-architecture)
+6. [🛠️ Detailed Tech Stack](#️-detailed-tech-stack)
+7. [✨ Full Feature Breakdown](#-full-feature-breakdown)
+8. [🚀 Getting Started & Deploying](#-getting-started--deploying)
+9. [🔐 Security & Compliance](#-security--compliance)
+10. [♿ Accessibility In-Depth](#-accessibility-in-depth)
 
 ---
 
-## ✨ Features
+## 🌟 The Vision
 
-### 1. Interactive Voting Simulation (Killer Feature)
-- Step-by-step walkthrough of the complete voting process (7 stages)
-- **Clickable EVM** with candidate buttons, red indicator lights, and beep confirmation
-- **VVPAT paper slip animation** (7-second display, auto-cut)
-- AI-narrated descriptions for each step via Gemini streaming
+> **"What if voter education felt like navigating with Google Maps instead of reading a dense legal manual?"**
 
-### 2. Misinformation Verifier
-- Paste any election claim or WhatsApp rumor
-- AI fact-checks using **Google Search grounding** for real-time verification
-- Returns verdict (✅ Verified / ⚠️ Partially True / ❌ False) with cited sources
-- Upload screenshots for visual analysis
-
-### 3. Document Analyzer
-- Upload voter ID, election notice, polling slip, or booth photo
-- **Gemini multimodal vision** analyzes and explains the document
-- Provides actionable next steps
-
-### 4. AI Election Mentor Chat
-- Streaming conversational AI with full conversation memory
-- **"Nervous First-Time Voter Mode"** — calmer, more reassuring, step-by-step guidance
-- **Voice input** via Web Speech API (en-IN)
-- **Text-to-speech** for AI responses
-- Pre-built quick prompts for common scenarios
+**VoteLens AI** is an intelligent, context-aware digital election mentor built to completely transform voter education. Moving beyond the passive nature of typical chatbots, it creates a deeply engaging, highly visual, and fully synchronized learning experience that guides users through every step of the democratic process.
 
 ---
 
-## 🏗️ Architecture
+## 🤔 The Problem
+
+Every election cycle, billions of citizens are met with a common hurdle: **information overload combined with digital intimidation**. 
 
 ```
-┌─────────────────────────────────────────┐
-│              Cloud Run                   │
-│  ┌─────────────────────────────────────┐ │
-│  │     Express.js Server               │ │
-│  │  ┌──────────┐  ┌────────────────┐   │ │
-│  │  │ API      │  │ Static Files   │   │ │
-│  │  │ Routes   │  │ (React Build)  │   │ │
-│  │  └────┬─────┘  └────────────────┘   │ │
-│  └───────┼─────────────────────────────┘ │
-│          │                               │
-│     ┌────▼─────────┐                     │
-│     │ Gemini 2.0   │                     │
-│     │ Flash API    │                     │
-│     │ • Chat       │                     │
-│     │ • Vision     │                     │
-│     │ • Grounding  │                     │
-│     └──────────────┘                     │
-└─────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────┐
+│                  THE CIVIC KNOWLEDGE GAP                    │
+├───────────────────────────────┬──────────────────────────────┤
+│       ❌ The Status Quo       │      ❌ The Generic AI       │
+├───────────────────────────────┼──────────────────────────────┤
+│ • Dense, 100-page manuals     │ • Long, dry text blocks      │
+│ • Menus with buried data      │ • Out-of-date answers        │
+│ • No visual context or demo   │ • Confusing prompt boxes     │
+│ • Hard-to-read voter slips    │ • No cross-screen context    │
+└───────────────────────────────┴──────────────────────────────┘
+```
+
+Voters struggle with:
+1. **Intimidation:** First-time and elderly voters often feel nervous about operating an EVM.
+2. **Disinformation:** Fake news on WhatsApp breeds uncertainty regarding EVM reliability and voter ID requirements.
+3. **Friction:** Finding the right answer to a specific scenario across fragmented tools takes far too much effort.
+
+---
+
+## 💡 The Solution
+
+**VoteLens AI** addresses these problems with **four distinct interactive pillars**, using **Google Gemini 2.5 Flash** as its foundational intelligence engine.
+
+```
+                  ┌──────────────────────┐
+                  │     VoteLens AI      │
+                  └──────────┬───────────┘
+                             │
+       ┌─────────────────────┼─────────────────────┐
+       ▼                     ▼                     ▼
+┌─────────────┐       ┌─────────────┐       ┌─────────────┐
+│ 🗳️ SIMULATE │       │ 🔍 VERIFY  │       │ 💬 MENTOR   │
+└─────────────┘       └─────────────┘       └─────────────┘
+Walking voters        Visible               Real-time,
+through the           Chain-of-Thought      supportive
+7 polling steps       fact-checking via     conversation
+with a tactile        Google Search         with optional
+virtual EVM.          grounding.            voice input.
 ```
 
 ---
 
-## 🛠️ Tech Stack
+## 🎯 How It's Different (Winner Features)
 
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Frontend | React 19 + Vite | UI framework |
-| Styling | Tailwind CSS v4 | Design system |
-| Animations | Framer Motion | Micro-interactions, page transitions |
-| Backend | Express.js (Node 20) | API server, static file serving |
-| AI | Gemini 2.0 Flash (`@google/genai`) | Chat, vision, grounding |
-| Voice | Web Speech API | Browser-native STT/TTS |
-| Deployment | Google Cloud Run + Docker | Serverless containers |
-| Security | Helmet, express-rate-limit, CORS | Production hardening |
+VoteLens AI delivers immediate, high-impact "wow" moments through four advanced, deeply integrated features.
+
+### 1. 🎯 Omni-Intent AI Router
+Instead of requiring users to select from dense menus, our landing page features a single, intelligent prompt. 
+* **The Magic:** Type in any natural language query (e.g., *"Can someone see who I voted for?"*).
+* **The Tech:** Gemini uses **JSON Mode** to classify intent, extract context, and route users to the appropriate tool instantly.
+
+### 2. 🔬 Streaming Chain-of-Thought Verification
+Our verification pipeline goes far beyond providing a simple text answer. It provides a visual reasoning experience.
+* **The Magic:** As the user inputs a rumor or claim, the AI displays its step-by-step thinking process live.
+* **The Steps:** 
+  1. `Analyzing Claim` 🔬
+  2. `Searching Evidence` 🌐
+  3. `Cross-Referencing Sources` ⚖️
+  4. `Synthesizing Verdict` 🎯
+* **The Tech:** Powered by an SSE stream directly connected to Gemini with Google Search grounding.
+
+### 3. ✨ Cross-Screen Orchestrator
+To avoid the standard "prompt-response" silo, the **Global Session Context** serves as a persistent floating intelligence layer across pages.
+* **The Magic:** For instance, if a user verifies an EVM rumor and then navigates to the simulation page, the AI notices and suggests: *"You just verified an EVM claim. Ready to skip ahead to the EVM step?"*
+* **The Tech:** Session history, weak quiz topics, and tool visits are aggregated into a React context provider, continuously deriving real-time recommendations.
+
+### 4. 💡 Adaptive Idle Guidance
+The platform senses when a user is pausing or hesitant and offers helpful, contextual tips.
+* **The Magic:** Pause for 12 seconds on a simulation stage, and a specialized tooltip offers step-specific advice (e.g. *"Only blue buttons cast votes; red lights confirm the choice."*).
 
 ---
 
-## 🔐 Google Services Used
+## 🏗️ Technical Architecture
 
-1. **Google Gemini 2.0 Flash** — Core AI engine
-   - Streaming text generation (chat, simulation narration)
-   - Multimodal vision (document/image analysis)
-   - Google Search grounding (fact-checking with live sources)
-2. **Google Cloud Run** — Serverless container deployment
-3. **Google Cloud Build** — Container image building
+VoteLens AI runs as a production-hardened full-stack application within a secure, high-availability architecture.
+
+```
+┌────────────────────────────────────────────────────────┐
+│                      Cloud Run                         │
+│  ┌──────────────────────────────────────────────────┐  │
+│  │               Express.js Backend                 │  │
+│  │                                                  │  │
+│  │  ┌────────────────────────┐  ┌────────────────┐  │  │
+│  │  │ REST / SSE API Routes  │  │ Static Assets  │  │  │
+│  │  │ • /api/verify-stream   │  │ (Vite Build)   │  │  │
+│  │  │ • /api/intent          │  │ • Landing      │  │  │
+│  │  │ • /api/chat            │  │ • Simulation   │  │  │
+│  │  │ • /api/quiz            │  │ • Verify       │  │  │
+│  │  │ • /api/analyze         │  │ • Mentor       │  │  │
+│  │  └───────────┬────────────┘  └────────────────┘  │  │
+│  └──────────────┼───────────────────────────────────┘  │
+│                 │                                      │
+│        ┌────────▼──────────────┐                       │
+│        │   Gemini 2.5 Flash    │                       │
+│        │ • JSON Output Mode    │                       │
+│        │ • Live Search Ground  │                       │
+│        │ • SSE Streaming       │                       │
+│        │ • Multimodal Vision   │                       │
+│        └───────────────────────┘                       │
+└────────────────────────────────────────────────────────┘
+```
 
 ---
 
-## 🚀 How to Run
+## 🛠️ Detailed Tech Stack
+
+| Layer | Component | Purpose |
+| :--- | :--- | :--- |
+| **Frontend** | React 19 + Vite | A highly responsive, single-page UI architecture |
+| **Styling** | Tailwind CSS v4 | Consistent typography and custom glassmorphic styling |
+| **Motion** | Framer Motion | Smooth component micro-interactions and transitions |
+| **Memory** | GlobalContext | React Context tracking cross-tool interactions |
+| **Voice** | Web Speech API | Native speech-to-text (STT) and text-to-speech (TTS) |
+| **Backend** | Express.js (Node 20) | Handles API requests, SSE streaming, and file management |
+| **AI Layer** | `@google/genai` SDK | Direct, low-latency calls to Gemini 2.5 Flash |
+| **Hosting** | Google Cloud Run | Serverless container hosting with automated deployment |
+
+---
+
+## ✨ Full Feature Breakdown
+
+### 🗳️ Interactive Simulation
+Experience a complete, immersive polling booth walkthrough:
+- **7 Walkthrough Stages:** Covers everything from gathering approved documents to receiving an indelible ink mark.
+- **Tactile EVM Interface:** Clickable candidate buttons, red indicator lights, and a distinct sound effect to confirm your choice.
+- **Dynamic VVPAT Paper Trail:** An automated 7-second display of the candidate slip before it drops into the ballot box.
+- **Direct Jump Support:** Deep link support allows users to go directly to specific steps.
+
+### 🔍 Misinformation Verifier
+- **Detailed Fact-Checking:** Enter claims from WhatsApp, social media, or other channels.
+- **Clear Verdicts:** Returns highly visible badges: `TRUE`, `PARTIALLY TRUE`, `FALSE`, or `UNVERIFIABLE`.
+- **Source Citations:** Links to trusted news articles or ECI updates via Google Search grounding.
+
+### 💬 AI Mentor
+- **Context-Aware Chat:** Maintains session history to help answer ongoing questions.
+- **Supportive Mode:** Adapts the tone to be extra clear, patient, and step-by-step for anxious or first-time voters.
+- **Multilingual Input:** Supports queries and responses in English or Hindi.
+
+### 🧠 Civic Quiz
+- **Tailored Category Tests:** Test your knowledge across topics like *Valid Documents*, *ECI Processes*, or *EVM & VVPAT Security*.
+- **Direct Link Parameters:** URL routing automatically directs users to a specific topic to simplify post-simulation review.
+
+---
+
+## 🚀 Getting Started & Deploying
 
 ### Prerequisites
 - Node.js 20+
-- A [Gemini API key](https://aistudio.google.com/apikey)
+- An active [Gemini API Key](https://aistudio.google.com/apikey)
 
-### Local Development
+### Local Installation
 
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/votelens-ai.git
-cd votelens-ai
+# 1. Clone the repository
+git clone https://github.com/bansalbhunesh/VoteLens-AI.git
+cd VoteLens-AI
 
-# Set up environment
+# 2. Add your environment variables
 cp .env.example .env
-# Edit .env and add your GEMINI_API_KEY
+# Edit .env and paste your GEMINI_API_KEY
 
-# Install dependencies
+# 3. Install core and client dependencies
 npm install
 cd client && npm install && cd ..
 
-# Start development servers
+# 4. Spin up the development environment
 npm run dev
 ```
 
-The app will be available at `http://localhost:5173` with API proxied to `http://localhost:3001`.
-
-### Production Build
-
-```bash
-npm run build
-npm start
-```
-
-### Deploy to Cloud Run
-
-```bash
-# Build and push container
-gcloud builds submit --tag gcr.io/PROJECT_ID/votelens-ai
-
-# Deploy
-gcloud run deploy votelens-ai \
-  --image gcr.io/PROJECT_ID/votelens-ai \
-  --platform managed \
-  --region us-central1 \
-  --allow-unauthenticated \
-  --set-env-vars GEMINI_API_KEY=your_key
-```
+The application starts immediately on `http://localhost:5173`.
 
 ---
 
-## ♿ Accessibility
+## 🔐 Security & Compliance
 
-- **Keyboard navigation** — All interactive elements are keyboard-accessible
-- **ARIA labels** — Screen reader support throughout
-- **Skip link** — "Skip to main content" for keyboard users
-- **Voice mode** — Speech input/output for users who can't type
-- **Reduced motion** — Respects `prefers-reduced-motion` media query
-- **High contrast** — Dark theme with sufficient color contrast ratios
-- **Semantic HTML** — Proper heading hierarchy, landmarks, and roles
+* **Server-Side Security:** Your Gemini API keys are never exposed to the client; all operations run safely on the backend.
+* **Rate-Limiting:** Integrated tiered limits of 120 requests/minute for static files and 30 requests/minute for AI endpoints.
+* **Strict Privacy First:** Any uploaded document images are cleared immediately from server memory after being processed.
+* **Robust Failures:** Retries with exponential backoff prevent dropped connections during sudden API latency spikes.
 
 ---
 
-## 🔒 Security
+## ♿ Accessibility In-Depth
 
-- **API keys server-side only** — Gemini API key never exposed to client
-- **Helmet.js** — HTTP security headers (CSP, HSTS, etc.)
-- **Rate limiting** — 100 requests/minute per IP
-- **Input validation** — All API inputs validated and sanitized
-- **File upload limits** — 10MB max, image-only MIME type filtering
-- **Non-root Docker** — Container runs as unprivileged user
-- **CORS** — Configured for production origin
+1. **Screen-Reader Compatibility:** WAI-ARIA landmarks (`role="main"`, `aria-live`, `aria-pressed`) on all core elements.
+2. **Keyboard Focus Management:** Explicitly defined tab indexes and a "Skip to Content" shortcut at the top of every page.
+3. **Contrast-Optimized Dark Mode:** Accessible color choices across dark themes to prevent eye strain.
+4. **Motion Controls:** Respects native `prefers-reduced-motion` settings.
 
 ---
 
-## 📝 Assumptions
-
-1. The app focuses on the **Indian election process** (ECI guidelines, EVM/VVPAT procedures)
-2. Voice features require a **Chromium-based browser** (Chrome/Edge) for full functionality
-3. The Gemini API key has access to the `gemini-2.0-flash` model with Google Search grounding
-4. Users have a modern browser with JavaScript enabled
-5. The app is **non-partisan** — it educates about process, not politics
-
----
-
-## 📁 Project Structure
-
-```
-votelens-ai/
-├── server.js            # Express server (API + static serving)
-├── api/
-│   ├── gemini.js        # Gemini SDK wrapper
-│   ├── prompts.js       # Engineered system prompts
-│   └── routes.js        # API endpoints
-├── client/
-│   └── src/
-│       ├── components/  # Reusable UI components
-│       ├── pages/       # Route pages
-│       ├── hooks/       # Custom React hooks
-│       └── utils/       # API client + constants
-├── Dockerfile           # Multi-stage production build
-└── package.json         # Project configuration
-```
-
----
-
-## License
-
-MIT — Built for the Virtual PromptWars Hackathon 2026.
+## 📄 License
+Distributed under the MIT License. Built for the Gemini API Developer Competition 2025.

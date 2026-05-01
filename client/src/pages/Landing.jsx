@@ -83,6 +83,7 @@ export default function Landing() {
   const [question, setQuestion] = useState('');
   const [isRouting, setIsRouting] = useState(false);
   const [routeResult, setRouteResult] = useState(null);
+  const [routeError, setRouteError] = useState(false);
   const [placeholderIdx, setPlaceholderIdx] = useState(0);
   const inputRef = useRef(null);
 
@@ -101,6 +102,7 @@ export default function Landing() {
 
     setIsRouting(true);
     setRouteResult(null);
+    setRouteError(false);
 
     try {
       const intent = await classifyIntent(q);
@@ -116,18 +118,19 @@ export default function Landing() {
         } else if (intent.tool === 'mentor') {
           params.set('q', intent.extractedContext || q);
           if (intent.suggestedMode === 'nervous') params.set('mode', 'nervous');
-        } else if (intent.tool === 'simulate') {
-          // Just navigate to simulation start
-        } else if (intent.tool === 'quiz') {
-          // Navigate to quiz
         }
 
         const queryString = params.toString();
         navigate(queryString ? `${route}?${queryString}` : route);
       }, 1200);
     } catch {
-      // Fallback: direct to mentor
-      navigate(`/mentor?q=${encodeURIComponent(q)}`);
+      // Graceful fallback: show error briefly, then route to mentor
+      setRouteError(true);
+      setIsRouting(false);
+      setTimeout(() => {
+        navigate(`/mentor?q=${encodeURIComponent(q)}`);
+      }, 1500);
+      return;
     } finally {
       setTimeout(() => setIsRouting(false), 1500);
     }
@@ -227,7 +230,16 @@ export default function Landing() {
                   </span>
                 </motion.div>
               )}
-              {!routeResult && !isRouting && (
+              {routeError && !isRouting && (
+                <motion.p
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  className="text-[11px] text-surface-400 flex items-center gap-1.5"
+                >
+                  <span className="text-accent-400">✦</span> Routing directly to Mentor — the AI will handle your question
+                </motion.p>
+              )}
+              {!routeResult && !isRouting && !routeError && (
                 <p className="text-[11px] text-surface-600">
                   Type anything — the AI will figure out the best tool for you
                 </p>
