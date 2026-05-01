@@ -1,9 +1,21 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { useSimulation } from '../hooks/useSimulation';
 import SimulationStage from '../components/SimulationStage';
 import MarkdownText from '../components/MarkdownText';
 import { SIMULATION_STEPS } from '../utils/constants';
 import { motion } from 'framer-motion';
+import { useGlobalContext } from '../hooks/useGlobalContext';
+
+const IDLE_NUDGES = {
+  1: { text: 'Tip: Make sure you bring your original voter ID, not a photocopy!', icon: '📋' },
+  2: { text: 'Don\'t worry about the queue — senior citizens and disabled voters get priority access.', icon: '🏛️' },
+  3: { text: 'Fun fact: Polling agents from each party watch the verification process to ensure fairness.', icon: '🪪' },
+  4: { text: 'The indelible ink stays for weeks — it\'s made with silver nitrate by a single factory in Mysore!', icon: '✍️' },
+  5: { text: 'Remember: the EVM only records ONE vote per person. Press the button next to your candidate\'s symbol.', icon: '🗳️' },
+  6: { text: 'The VVPAT slip is visible for exactly 7 seconds — keep your eyes on the transparent window!', icon: '📄' },
+  7: { text: 'Congratulations! By voting, you joined nearly a billion citizens in the world\'s largest democracy.', icon: '🎉' },
+};
 
 export default function Simulation() {
   const {
@@ -22,13 +34,55 @@ export default function Simulation() {
     prevStep,
     castVote,
     resetSimulation,
+    jumpToStep,
   } = useSimulation();
+
+  const ctx = useGlobalContext();
+  const [searchParams] = useSearchParams();
+  const didJumpRef = useRef(false);
+
+  // Handle ?jumpTo= from Orchestrator
+  useEffect(() => {
+    const jumpTo = searchParams.get('jumpTo');
+    if (jumpTo && !didJumpRef.current) {
+      didJumpRef.current = true;
+      const step = parseInt(jumpTo, 10);
+      if (step >= 1 && step <= 7) {
+        if (currentStep === 0) {
+          startSimulation();
+        }
+        // Small delay to let simulation initialize
+        setTimeout(() => {
+          if (jumpToStep) jumpToStep(step);
+        }, 100);
+      }
+    }
+  }, [searchParams]); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     if (currentStep > 0 && !narration && !isNarrating) {
       fetchNarration(currentStep);
     }
   }, [currentStep, narration, isNarrating, fetchNarration]);
+
+  // Record simulation step in global context
+  useEffect(() => {
+    if (currentStep > 0) {
+      const stepData = SIMULATION_STEPS.find((s) => s.id === currentStep);
+      if (stepData) ctx.recordSimulationStep(currentStep, stepData.name);
+    }
+  }, [currentStep]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Idle detection — nudge after 12s of inactivity on a step
+  useEffect(() => {
+    if (currentStep > 0 && !isNarrating) {
+      const nudge = IDLE_NUDGES[currentStep];
+      if (nudge) {
+        ctx.startIdleTimer(nudge, 12000);
+      }
+    }
+    return () => ctx.resetIdleTimer();
+  }, [currentStep, isNarrating]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const stepData = SIMULATION_STEPS.find((s) => s.id === currentStep);
 

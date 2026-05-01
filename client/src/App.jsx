@@ -2,6 +2,8 @@ import { Suspense, lazy } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout';
 import ErrorBoundary from './components/ErrorBoundary';
+import Orchestrator from './components/Orchestrator';
+import { GlobalContextProvider } from './hooks/useGlobalContext';
 
 const Landing    = lazy(() => import('./pages/Landing'));
 const Simulation = lazy(() => import('./pages/Simulation'));
@@ -25,18 +27,21 @@ export default function App() {
   return (
     <ErrorBoundary>
       <BrowserRouter>
-        <Suspense fallback={<PageLoader />}>
-          <Routes>
-            <Route element={<Layout />}>
-              <Route path="/"         element={<Landing />} />
-              <Route path="/simulate" element={<Simulation />} />
-              <Route path="/verify"   element={<Verify />} />
-              <Route path="/mentor"   element={<Mentor />} />
-              <Route path="/quiz"     element={<Quiz />} />
-              <Route path="*"         element={<NotFound />} />
-            </Route>
-          </Routes>
-        </Suspense>
+        <GlobalContextProvider>
+          <Suspense fallback={<PageLoader />}>
+            <Routes>
+              <Route element={<Layout />}>
+                <Route path="/"         element={<Landing />} />
+                <Route path="/simulate" element={<Simulation />} />
+                <Route path="/verify"   element={<Verify />} />
+                <Route path="/mentor"   element={<Mentor />} />
+                <Route path="/quiz"     element={<Quiz />} />
+                <Route path="*"         element={<NotFound />} />
+              </Route>
+            </Routes>
+          </Suspense>
+          <Orchestrator />
+        </GlobalContextProvider>
       </BrowserRouter>
     </ErrorBoundary>
   );

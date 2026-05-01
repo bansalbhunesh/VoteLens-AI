@@ -7,6 +7,8 @@ import {
   getElectionInfo,
   getSimulationNarration,
   generateQuiz,
+  determineIntent,
+  verifyInformationStream,
 } from './gemini.js';
 
 const router = Router();
@@ -16,6 +18,7 @@ const MAX_CLAIM_LENGTH   = 2000;
 const MAX_QUERY_LENGTH   = 1000;
 const MAX_TOPIC_LENGTH   = 200;
 const MAX_MSG_CONTENT    = 4000;
+const MAX_INTENT_LENGTH  = 500;
 
 const upload = multer({
   storage: multer.memoryStorage(),
@@ -185,6 +188,56 @@ router.post('/quiz', async (req, res, next) => {
     res.json({ questions });
   } catch (err) {
     next(err);
+  }
+});
+
+// ── POST /api/intent ── Omni-Intent Router
+router.post('/intent', async (req, res, next) => {
+  try {
+    const { input } = req.body;
+    if (!input || typeof input !== 'string' || !input.trim()) {
+      return res.status(400).json({ error: 'input must be a non-empty string.' });
+    }
+    if (input.length > MAX_INTENT_LENGTH) {
+      return res.status(400).json({ error: `Input exceeds ${MAX_INTENT_LENGTH} character limit.` });
+    }
+    const result = await determineIntent(input.trim());
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// ── POST /api/verify-stream ── Streaming verification with chain-of-thought
+router.post('/verify-stream', async (req, res, next) => {
+  try {
+    const { claim } = req.body;
+    if (!claim || typeof claim !== 'string' || !claim.trim()) {
+      return res.status(400).json({ error: 'claim must be a non-empty string.' });
+    }
+    if (claim.length > MAX_CLAIM_LENGTH) {
+      return res.status(400).json({ error: `Claim exceeds ${MAX_CLAIM_LENGTH} character limit.` });
+    }
+
+    sseOpen(res);
+
+    const abortController = new AbortController();
+    req.on('close', () => abortController.abort());
+
+    const stream = verifyInformationStream(claim.trim(), abortController.signal);
+    for await (const chunk of stream) {
+      if (res.writableEnded) break;
+      sseData(res, { text: chunk });
+    }
+
+    if (!res.writableEnded) sseDone(res);
+  } catch (err) {
+    if (err.name === 'AbortError') return res.end();
+    if (res.headersSent) {
+      if (!res.writableEnded) { sseData(res, { error: 'Stream interrupted.' }); res.end(); }
+    } else {
+      next(err);
+    }
   }
 });
 

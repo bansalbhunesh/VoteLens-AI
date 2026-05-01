@@ -186,3 +186,72 @@ export async function* streamSimulation(step, stepName, facts = [], signal) {
     }
   }
 }
+
+/**
+ * Classify user intent via the Omni-Intent router.
+ * @param {string} input - Raw user text
+ * @returns {Promise<{tool: string, confidence: number, extractedContext: string, reasoning: string, suggestedMode: string}>}
+ */
+export async function classifyIntent(input) {
+  const response = await fetch(`${API_BASE}/intent`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ input }),
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Intent classification failed' }));
+    throw new Error(err.error || 'Intent classification failed');
+  }
+
+  return response.json();
+}
+
+/**
+ * Stream verification with chain-of-thought reasoning steps.
+ * @param {string} claim - The claim to verify
+ * @param {AbortSignal} [signal]
+ * @returns {AsyncGenerator<string>}
+ */
+export async function* streamVerify(claim, signal) {
+  const response = await fetch(`${API_BASE}/verify-stream`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ claim }),
+    signal,
+  });
+
+  if (!response.ok) {
+    const err = await response.json().catch(() => ({ error: 'Verification failed' }));
+    throw new Error(err.error || 'Streaming verification failed');
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+
+  while (true) {
+    const { done, value } = await reader.read();
+    if (done) break;
+
+    buffer += decoder.decode(value, { stream: true });
+    const lines = buffer.split('\n');
+    buffer = lines.pop() || '';
+
+    for (const line of lines) {
+      if (line.startsWith('data: ')) {
+        const data = line.slice(6).trim();
+        if (data === '[DONE]') return;
+        try {
+          const parsed = JSON.parse(data);
+          if (parsed.text) yield parsed.text;
+          if (parsed.error) throw new Error(parsed.error);
+        } catch (e) {
+          if (e.message !== 'Unexpected end of JSON input') {
+            // Ignore parse errors from partial chunks
+          }
+        }
+      }
+    }
+  }
+}

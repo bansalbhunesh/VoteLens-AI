@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
+import { classifyIntent } from '../utils/api';
 
 const features = [
   {
@@ -44,9 +45,18 @@ const stats = [
   { value: '12', label: 'Valid ID Documents' },
 ];
 
+const PLACEHOLDER_EXAMPLES = [
+  'I saw a WhatsApp forward saying EVMs can be hacked with Bluetooth…',
+  'How do I register to vote for the first time?',
+  'I\'m nervous about voting — walk me through it',
+  'Test my knowledge about voter rights',
+  'What happens if I press the wrong button on the EVM?',
+  'Can someone else vote on my behalf?',
+];
+
 const containerVariants = {
   hidden: {},
-  show: { transition: { staggerChildren: 0.1 } },
+  show: { transition: { staggerChildren: 0.08 } },
 };
 
 const itemVariants = {
@@ -54,15 +64,73 @@ const itemVariants = {
   show: { opacity: 1, y: 0, transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] } },
 };
 
+const TOOL_ROUTES = {
+  verify: '/verify',
+  simulate: '/simulate',
+  mentor: '/mentor',
+  quiz: '/quiz',
+};
+
+const TOOL_LABELS = {
+  verify: { icon: '🔍', label: 'Fact-Check Engine' },
+  simulate: { icon: '🗳️', label: 'Polling Simulation' },
+  mentor: { icon: '💬', label: 'AI Mentor' },
+  quiz: { icon: '🧠', label: 'Civic Quiz' },
+};
+
 export default function Landing() {
   const navigate = useNavigate();
   const [question, setQuestion] = useState('');
+  const [isRouting, setIsRouting] = useState(false);
+  const [routeResult, setRouteResult] = useState(null);
+  const [placeholderIdx, setPlaceholderIdx] = useState(0);
+  const inputRef = useRef(null);
 
-  const handleAsk = (e) => {
+  // Cycle through placeholder examples
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPlaceholderIdx((prev) => (prev + 1) % PLACEHOLDER_EXAMPLES.length);
+    }, 3500);
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleOmniSubmit = async (e) => {
     e?.preventDefault();
     const q = question.trim();
-    if (!q) return;
-    navigate(`/mentor?q=${encodeURIComponent(q)}`);
+    if (!q || isRouting) return;
+
+    setIsRouting(true);
+    setRouteResult(null);
+
+    try {
+      const intent = await classifyIntent(q);
+      setRouteResult(intent);
+
+      // Brief display of the routing result, then navigate
+      setTimeout(() => {
+        const route = TOOL_ROUTES[intent.tool] || '/mentor';
+        const params = new URLSearchParams();
+
+        if (intent.tool === 'verify') {
+          params.set('claim', intent.extractedContext || q);
+        } else if (intent.tool === 'mentor') {
+          params.set('q', intent.extractedContext || q);
+          if (intent.suggestedMode === 'nervous') params.set('mode', 'nervous');
+        } else if (intent.tool === 'simulate') {
+          // Just navigate to simulation start
+        } else if (intent.tool === 'quiz') {
+          // Navigate to quiz
+        }
+
+        const queryString = params.toString();
+        navigate(queryString ? `${route}?${queryString}` : route);
+      }, 1200);
+    } catch {
+      // Fallback: direct to mentor
+      navigate(`/mentor?q=${encodeURIComponent(q)}`);
+    } finally {
+      setTimeout(() => setIsRouting(false), 1500);
+    }
   };
 
   return (
@@ -106,12 +174,68 @@ export default function Landing() {
           </motion.p>
           <motion.p
             variants={itemVariants}
-            className="text-base text-surface-400/60 max-w-xl mx-auto mb-12 leading-relaxed"
+            className="text-base text-surface-400/60 max-w-xl mx-auto mb-10 leading-relaxed"
           >
             Simulate the polling booth. Verify rumours. Ask anything — in English or Hindi.
             Know your vote. Own your democracy.
           </motion.p>
 
+          {/* ── Omni-Intent Input ── */}
+          <motion.div variants={itemVariants} className="w-full max-w-2xl mx-auto mb-6">
+            <form onSubmit={handleOmniSubmit} className="relative">
+              <div className={`omni-input-glow glass rounded-[32px] p-2 flex items-center gap-2 border transition-all duration-500 ${isRouting ? 'border-primary-500/40 shadow-lg shadow-primary-500/10' : 'border-white/5 focus-within:border-white/12'}`}>
+                <div className="pl-4 text-xl opacity-60">✨</div>
+                <input
+                  ref={inputRef}
+                  value={question}
+                  onChange={(e) => setQuestion(e.target.value)}
+                  placeholder={PLACEHOLDER_EXAMPLES[placeholderIdx]}
+                  disabled={isRouting}
+                  className="flex-1 bg-transparent border-none focus:ring-0 text-base text-surface-50 placeholder-surface-500 py-3 px-2 min-w-0"
+                  aria-label="Ask anything about Indian elections"
+                />
+                <button
+                  type="submit"
+                  disabled={!question.trim() || isRouting}
+                  className="w-11 h-11 rounded-full flex items-center justify-center transition-all text-base font-bold shrink-0 disabled:bg-surface-800/50 disabled:text-surface-700 bg-primary-500 text-white hover:bg-primary-400 enabled:shadow-lg enabled:shadow-primary-500/20"
+                >
+                  {isRouting ? (
+                    <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    '→'
+                  )}
+                </button>
+              </div>
+            </form>
+
+            {/* Routing result display */}
+            <div className="h-12 mt-4 flex items-center justify-center">
+              {routeResult && (
+                <motion.div
+                  initial={{ opacity: 0, y: 8, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  className="inline-flex items-center gap-3 px-5 py-2.5 rounded-full glass border border-primary-500/25"
+                >
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="w-2 h-2 rounded-full bg-primary-400 animate-pulse" />
+                    <span className="text-surface-400">Routing to</span>
+                    <span className="text-xl">{TOOL_LABELS[routeResult.tool]?.icon}</span>
+                    <span className="text-primary-400 font-semibold">{TOOL_LABELS[routeResult.tool]?.label}</span>
+                  </div>
+                  <span className="text-[10px] text-surface-500 tabular-nums">
+                    {Math.round(routeResult.confidence * 100)}% confident
+                  </span>
+                </motion.div>
+              )}
+              {!routeResult && !isRouting && (
+                <p className="text-[11px] text-surface-600">
+                  Type anything — the AI will figure out the best tool for you
+                </p>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Quick action buttons */}
           <motion.div
             variants={itemVariants}
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
@@ -125,35 +249,15 @@ export default function Landing() {
                 Begin Simulation →
               </motion.button>
             </Link>
-            <Link to="/mentor">
+            <Link to="/verify">
               <motion.button
                 whileHover={{ y: -2 }}
                 whileTap={{ scale: 0.97 }}
                 className="px-10 py-4 glass text-surface-50 font-medium rounded-full text-lg hover:bg-white/5 transition-elegant"
               >
-                Talk to Mentor
+                Verify a Rumour
               </motion.button>
             </Link>
-          </motion.div>
-
-          {/* Ask anything inline */}
-          <motion.div variants={itemVariants} className="mt-8 w-full max-w-lg mx-auto">
-            <p className="text-[10px] text-surface-700 uppercase tracking-widest mb-3 text-center">or ask the AI directly</p>
-            <form onSubmit={handleAsk} className="relative">
-              <input
-                value={question}
-                onChange={(e) => setQuestion(e.target.value)}
-                placeholder="E.g. How do I register to vote? What is NOTA?"
-                className="w-full glass rounded-full px-5 py-3.5 pr-14 text-sm text-surface-50 placeholder-surface-600 border border-white/5 focus:border-white/12 focus:outline-none transition-colors"
-              />
-              <button
-                type="submit"
-                disabled={!question.trim()}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full flex items-center justify-center transition-all text-base font-bold disabled:bg-surface-800 disabled:text-surface-700 bg-primary-500 text-white hover:bg-primary-400 enabled:shadow-lg enabled:shadow-primary-500/20"
-              >
-                →
-              </button>
-            </form>
           </motion.div>
         </motion.div>
       </section>

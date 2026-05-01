@@ -140,6 +140,21 @@ export function useSimulation() {
     setVvpatSecondsLeft(0);
   }, []);
 
+  /**
+   * Jump directly to a specific step (used by Orchestrator cross-screen navigation).
+   */
+  const jumpToStep = useCallback((step) => {
+    if (step >= 1 && step <= totalSteps) {
+      abortControllerRef.current?.abort();
+      setCurrentStep(step);
+      setNarration('');
+      // Mark earlier steps as completed
+      const completed = new Set();
+      for (let i = 1; i < step; i++) completed.add(i);
+      setCompletedSteps(completed);
+    }
+  }, [totalSteps]);
+
   return {
     currentStep,
     narration,
@@ -156,5 +171,6 @@ export function useSimulation() {
     prevStep,
     castVote,
     resetSimulation,
+    jumpToStep,
   };
 }

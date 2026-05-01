@@ -11,6 +11,8 @@ import {
   SIMULATION_NARRATOR_PROMPT,
   IMAGE_ANALYSIS_PROMPT,
   QUIZ_PROMPT,
+  INTENT_PROMPT,
+  STREAMING_VERIFICATION_PROMPT,
 } from './prompts.js';
 import { withRetries } from './utils/ai-wrapper.js';
 
@@ -242,6 +244,57 @@ export async function* getSimulationNarration(step, stepName, facts = [], signal
       abortSignal: signal,
     },
   }), { timeoutMs: 20000, retries: 2 });
+
+  for await (const chunk of response) {
+    if (signal?.aborted) return;
+    if (chunk.text) yield chunk.text;
+  }
+}
+
+/**
+ * Determine user intent and route to the best tool.
+ * Uses Gemini JSON structured output for reliable parsing.
+ * @param {string} input - Raw user input
+ * @returns {Promise<{tool: string, confidence: number, extractedContext: string, reasoning: string, suggestedMode: string}>}
+ */
+export async function determineIntent(input) {
+  const client = getClient();
+
+  const response = await withRetries(() => client.models.generateContent({
+    model: MODEL,
+    contents: `Classify this user input and determine the best tool:\n\n"${input}"`,
+    config: {
+      systemInstruction: INTENT_PROMPT,
+      responseMimeType: 'application/json',
+      temperature: 0.1,
+      maxOutputTokens: 300,
+    },
+  }), { timeoutMs: 10000, retries: 1 });
+
+  return JSON.parse(response.text);
+}
+
+/**
+ * Verify a claim with streaming chain-of-thought reasoning.
+ * Uses Google Search grounding for real-time evidence.
+ * @param {string} claim - The claim to verify
+ * @param {AbortSignal} [signal] - Abort signal
+ * @returns {AsyncGenerator<string>} Streamed text chunks with [STEP] markers
+ */
+export async function* verifyInformationStream(claim, signal) {
+  const client = getClient();
+
+  const response = await client.models.generateContentStream({
+    model: MODEL,
+    contents: `Verify this claim about the Indian election process with detailed reasoning:\n\n"${claim}"`,
+    config: {
+      systemInstruction: STREAMING_VERIFICATION_PROMPT,
+      tools: [{ googleSearch: {} }],
+      temperature: 0.2,
+      maxOutputTokens: 2000,
+      abortSignal: signal,
+    },
+  });
 
   for await (const chunk of response) {
     if (signal?.aborted) return;

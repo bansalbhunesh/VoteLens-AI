@@ -94,9 +94,11 @@ const aiLimiter = rateLimit({
 app.use('/api/', defaultLimiter);
 app.use('/api/chat', aiLimiter);
 app.use('/api/verify', aiLimiter);
+app.use('/api/verify-stream', aiLimiter);
 app.use('/api/simulate', aiLimiter);
 app.use('/api/quiz', aiLimiter);
 app.use('/api/analyze', aiLimiter);
+app.use('/api/intent', aiLimiter);
 
 // ── API Routes ──
 app.use('/api', apiRoutes);
