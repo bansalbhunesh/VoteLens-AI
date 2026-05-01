@@ -5,6 +5,8 @@
  */
 
 import { createContext, useContext, useState, useCallback, useRef } from 'react';
+import { auth, db } from '../firebase.js';
+import { doc, setDoc } from 'firebase/firestore';
 
 const GlobalContext = createContext(null);
 
@@ -24,6 +26,21 @@ export function GlobalContextProvider({ children }) {
   const logEvent = useCallback((type, data) => {
     const event = { type, data, ts: Date.now() };
     setEvents((prev) => [...prev.slice(-(MAX_EVENTS - 1)), event]);
+
+    // Firestore Persistence Integration
+    if (db) {
+      try {
+        const docId = `session_${Date.now()}`;
+        setDoc(doc(db, 'session_events', docId), {
+          type,
+          data,
+          ts: Date.now(),
+          uid: auth?.currentUser?.uid || 'anonymous_user'
+        });
+      } catch {
+        // Silent fallback
+      }
+    }
   }, []);
 
   const recordToolVisit = useCallback((tool) => {
