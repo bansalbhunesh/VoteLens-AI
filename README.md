@@ -25,6 +25,15 @@
 
 ---
 
+## ☁️ Google Cloud & Firebase Services Implementation
+
+VoteLens AI natively integrates with the full suite of **Google Services** for a production-hardened, real-time, and serverless experience:
+- **Google Cloud Platform (GCP):** Deployed serverless on **Google Cloud Run**, fully integrated with **Google Cloud Logging** for structured logs.
+- **Google Cloud Storage / Firebase:** Used to cache local assets and manage high-performance multimedia assets securely.
+- **Google Search Grounding via Gemini API:** Real-time fact verification directly utilizing Google Search within the Gemini model framework.
+
+---
+
 ## 🌟 The Vision
 
 > **"What if voter education felt like navigating with Google Maps instead of reading a dense legal manual?"**

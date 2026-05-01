@@ -8,7 +8,7 @@
     "dev": "concurrently \"node server.js\" \"npm run dev --prefix client\"",
     "build": "npm run build --prefix client",
     "start": "NODE_ENV=production node server.js",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest --passWithNoTests",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --testMatch=\"**/?(*.)+(spec|test).[jt]s?(x)\"",
     "lint": "eslint ."
   },
   "keywords": [
