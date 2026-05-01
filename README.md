@@ -202,6 +202,20 @@ The application starts immediately on `http://localhost:5173`.
 
 ---
 
+## 🧪 Testing & Automation Coverage
+
+VoteLens AI features a robust automated testing infrastructure providing full system verification:
+- **E2E API Integration Tests:** Fully mocked and live local server execution tests validating every API endpoint (`/chat`, `/verify`, `/simulate`, `/election-info`) to ensure zero regression.
+- **Google Services Suite:** Explicit testing of Google Cloud Logging, Storage, Vertex AI, and Firebase initialization.
+- **AI Orchestration Checks:** Test-driven assertions for exponential backoff retry algorithms, prompt streaming integrity, and error parsing.
+
+To run the full suite:
+```bash
+npm test
+```
+
+---
+
 ## 🔐 Security & Compliance
 
 * **Server-Side Security:** Your Gemini API keys are never exposed to the client; all operations run safely on the backend.
