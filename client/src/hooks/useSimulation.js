@@ -43,6 +43,7 @@ export function useSimulation() {
     if (abortControllerRef.current) {
       abortControllerRef.current.abort();
     }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   /**
@@ -87,6 +88,7 @@ export function useSimulation() {
       const next = currentStep + 1;
       setCurrentStep(next);
       setNarration('');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentStep, totalSteps]);
 
@@ -97,6 +99,7 @@ export function useSimulation() {
     if (currentStep > 1) {
       setCurrentStep(currentStep - 1);
       setNarration('');
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [currentStep]);
 
@@ -138,6 +141,7 @@ export function useSimulation() {
     setSelectedCandidate(null);
     setShowVVPAT(false);
     setVvpatSecondsLeft(0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   }, []);
 
   /**
@@ -152,6 +156,7 @@ export function useSimulation() {
       const completed = new Set();
       for (let i = 1; i < step; i++) completed.add(i);
       setCompletedSteps(completed);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }, [totalSteps]);
 

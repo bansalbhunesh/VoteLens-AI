@@ -107,6 +107,7 @@ For the current step, provide:
 - Key things to know or remember
 - A reassuring note for nervous voters
 
+CRITICAL: Always fully complete every sentence. Never leave a thought unfinished or abruptly truncated.
 Keep it immersive and engaging — this is an experience, not a lecture.
 Use present tense: "You walk in...", "The officer asks you..."`;
 
