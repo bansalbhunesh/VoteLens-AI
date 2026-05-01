@@ -108,7 +108,9 @@ export default function Quiz() {
       const found = QUIZ_TOPICS.find((q) => q.id === t);
       if (found) {
         didInitRef.current = true;
-        handleTopicSelect(found);
+        setTimeout(() => {
+          handleTopicSelect(found);
+        }, 0);
       }
     }
   }, [searchParams, phase]); // eslint-disable-line react-hooks/exhaustive-deps
