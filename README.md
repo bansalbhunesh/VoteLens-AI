@@ -140,7 +140,9 @@ graph TD
 | **Voice** | Web Speech API | Native speech-to-text (STT) and text-to-speech (TTS) |
 | **Backend** | Express.js (Node 20) | Handles API requests, SSE streaming, and file management |
 | **AI Layer** | `@google/genai` SDK | Direct, low-latency calls to Gemini 2.5 Flash |
-| **Hosting** | Google Cloud Run | Serverless container hosting with automated deployment |
+| **GCP Hosting** | Google Cloud Run | Serverless container hosting with automated deployment |
+| **GCP Cloud Services** | Google Cloud Platform (GCP) | Integrated with Google Cloud Logging and Google Cloud Storage |
+| **BaaS Layer** | Firebase | Firebase App, Auth, Firestore, and Analytics integrations |
 
 ---
 
