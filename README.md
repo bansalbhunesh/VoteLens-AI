@@ -205,4 +205,5 @@ The application starts immediately on `http://localhost:5173`.
 ---
 
 ## 📄 License
-Distributed under the MIT License. Built for the Gemini API Developer Competition 2025.
+Distributed under the MIT License.
+
