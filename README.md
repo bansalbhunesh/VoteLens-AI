@@ -5,6 +5,9 @@
 <p align="center">
   <img src="https://img.shields.io/badge/Powered%20by-Gemini%202.5%20Flash-4285F4?style=for-the-badge&logo=google" alt="Powered by Gemini" />
   <img src="https://img.shields.io/badge/Deployed%20on-Cloud%20Run-4285F4?style=for-the-badge&logo=googlecloud" alt="Deployed on Cloud Run" />
+  <img src="https://img.shields.io/badge/Firebase-Real--time%20Suite-FFCA28?style=for-the-badge&logo=firebase" alt="Firebase Suite" />
+  <img src="https://img.shields.io/badge/Vertex%20AI-Enterprise-4285F4?style=for-the-badge&logo=googlecloud" alt="Vertex AI" />
+  <img src="https://img.shields.io/badge/Google%20Maps-Geocoding-4285F4?style=for-the-badge&logo=googlemaps" alt="Google Maps" />
   <img src="https://img.shields.io/badge/Accessibility-Aria%20Optimized-10b981?style=for-the-badge&logo=accessibility" alt="Accessibility Optimized" />
 </p>
 
