@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 /**
  * GlobalContext — Cross-screen session memory for orchestration.
  * Tracks user actions across tools to enable contextual suggestions.
@@ -15,7 +16,7 @@ export function GlobalContextProvider({ children }) {
   const [lastVerdict, setLastVerdict] = useState(null);
   const [quizWeakTopics, setQuizWeakTopics] = useState([]);
   const [visitedTools, setVisitedTools] = useState(new Set());
-  const [sessionStartTime] = useState(Date.now());
+  const [sessionStartTime] = useState(() => Date.now());
   const idleTimerRef = useRef(null);
   const [idleNudge, setIdleNudge] = useState(null);
   const [orchestratorSuggestion, setOrchestratorSuggestion] = useState(null);

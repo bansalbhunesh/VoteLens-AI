@@ -87,17 +87,6 @@ export default function Verify() {
   const didAutoVerifyRef = useRef(false);
   const ctx = useGlobalContext();
 
-  // Auto-verify from ?claim= parameter (Omni-Intent routing)
-  useEffect(() => {
-    const claim = searchParams.get('claim');
-    if (claim && !didAutoVerifyRef.current && !isStreaming && !isComplete) {
-      didAutoVerifyRef.current = true;
-      setClaimText(claim);
-      // Small delay to show the claim in the textarea first
-      setTimeout(() => handleStreamVerify(claim), 300);
-    }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
-
   const reasoningSteps = parseReasoningSteps(streamedText);
   const lastStep = reasoningSteps[reasoningSteps.length - 1];
   const verdictData = lastStep ? parseVerdict(lastStep.content) : null;
@@ -137,6 +126,17 @@ export default function Verify() {
       setIsStreaming(false);
     }
   };
+
+  // Auto-verify from ?claim= parameter (Omni-Intent routing)
+  useEffect(() => {
+    const claim = searchParams.get('claim');
+    if (claim && !didAutoVerifyRef.current && !isStreaming && !isComplete) {
+      didAutoVerifyRef.current = true;
+      setClaimText(claim);
+      // Small delay to show the claim in the textarea first
+      setTimeout(() => handleStreamVerify(claim), 300);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handleImageUpload = async (file) => {
     setIsLoading(true);

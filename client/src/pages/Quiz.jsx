@@ -83,17 +83,6 @@ export default function Quiz() {
     ([i, ans]) => questions[parseInt(i)]?.correct === ans
   ).length;
 
-  useEffect(() => {
-    const t = searchParams.get('topic');
-    if (t && !didInitRef.current && phase === 'select') {
-      const found = QUIZ_TOPICS.find((q) => q.id === t);
-      if (found) {
-        didInitRef.current = true;
-        handleTopicSelect(found);
-      }
-    }
-  }, [searchParams, phase]); // eslint-disable-line react-hooks/exhaustive-deps
-
   const handleTopicSelect = async (topic) => {
     setSelectedTopic(topic);
     setPhase('loading');
@@ -113,6 +102,17 @@ export default function Quiz() {
     }
   };
 
+  useEffect(() => {
+    const t = searchParams.get('topic');
+    if (t && !didInitRef.current && phase === 'select') {
+      const found = QUIZ_TOPICS.find((q) => q.id === t);
+      if (found) {
+        didInitRef.current = true;
+        handleTopicSelect(found);
+      }
+    }
+  }, [searchParams, phase]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const handleAnswer = useCallback((option) => {
     if (revealed) return;
     setAnswers((prev) => ({ ...prev, [currentQ]: option }));
@@ -129,7 +129,7 @@ export default function Quiz() {
       ctx.recordQuizResult(selectedTopic.label, score, questions.length);
       setPhase('results');
     }
-  }, [currentQ, questions.length, selectedTopic, score]);
+  }, [currentQ, questions.length, selectedTopic, score, ctx]);
 
   // Keyboard shortcuts — declared after handleAnswer/handleNext so closures capture them
   const handleKeyDown = useCallback(
