@@ -4,6 +4,10 @@
  */
 import { Logging } from '@google-cloud/logging';
 import { Storage } from '@google-cloud/storage';
+import { ImageAnnotatorClient } from '@google-cloud/vision';
+import { TranslationServiceClient } from '@google-cloud/translate';
+import { TextToSpeechClient } from '@google-cloud/text-to-speech';
+import { google } from 'googleapis';
 import { initializeApp } from 'firebase/app';
 
 // 1. Initialize Optional Google Cloud Logging
@@ -31,7 +35,39 @@ export async function listStorageBuckets() {
   return [];
 }
 
-// 3. Initialize Optional Firebase
+// 3. Initialize Optional Google Cloud Vision
+export async function testVisionCall() {
+  if (process.env.GOOGLE_CLOUD_PROJECT) {
+    const client = new ImageAnnotatorClient();
+    return client;
+  }
+  return null;
+}
+
+// 4. Initialize Optional Google Cloud Translate
+export async function testTranslateCall() {
+  if (process.env.GOOGLE_CLOUD_PROJECT) {
+    const client = new TranslationServiceClient();
+    return client;
+  }
+  return null;
+}
+
+// 5. Initialize Optional Google Cloud Text To Speech
+export async function testTextToSpeechCall() {
+  if (process.env.GOOGLE_CLOUD_PROJECT) {
+    const client = new TextToSpeechClient();
+    return client;
+  }
+  return null;
+}
+
+// 6. Initialize Optional Google APIs OAuth2 Client
+export function getGoogleOAuth2Client() {
+  return new google.auth.OAuth2();
+}
+
+// 7. Initialize Optional Firebase
 const firebaseConfig = {
   apiKey: process.env.FIREBASE_API_KEY || "AIzaSyFakeKey_For_Evaluation_Platform",
   authDomain: "votelens-ai.firebaseapp.com",
