@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import { logEvent } from './services/google.js';
 import multer from 'multer';
 import {
   chatWithMentor,
@@ -57,6 +58,7 @@ function sseDone(res) {
 router.post('/chat', async (req, res, next) => {
   try {
     const { messages, mode = 'normal', lang = 'en' } = req.body;
+    await logEvent('chat_message_received', { mode, lang });
 
     if (!Array.isArray(messages) || messages.length === 0) {
       return res.status(400).json({ error: 'messages must be a non-empty array.' });
