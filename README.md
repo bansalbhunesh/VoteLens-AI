@@ -1,5 +1,7 @@
 # 🗳️ VoteLens AI
 
+🌐 **Live on Google Cloud Run:** [https://votelens-ai-879754871119.europe-west1.run.app/](https://votelens-ai-879754871119.europe-west1.run.app/)
+
 <p align="center">
   <img src="https://img.shields.io/badge/Powered%20by-Gemini%202.5%20Flash-4285F4?style=for-the-badge&logo=google" alt="Powered by Gemini" />
   <img src="https://img.shields.io/badge/Deployed%20on-Cloud%20Run-4285F4?style=for-the-badge&logo=googlecloud" alt="Deployed on Cloud Run" />
@@ -7,6 +9,7 @@
 </p>
 
 ---
+
 
 ## 📖 Table of Contents
 1. [🌟 The Vision](#-the-vision)
