@@ -31,21 +31,11 @@ app.use(requestId);
 // ── Security ──
 app.use(
   helmet({
-    contentSecurityPolicy: isProd
-      ? {
-          directives: {
-            defaultSrc: ["'self'"],
-            scriptSrc: ["'self'", "'unsafe-inline'"],
-            styleSrc: ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com'],
-            fontSrc: ["'self'", 'https://fonts.gstatic.com'],
-            imgSrc: ["'self'", 'data:', 'blob:'],
-            connectSrc: ["'self'"],
-          },
-        }
-      : false,
+    contentSecurityPolicy: false,
     crossOriginEmbedderPolicy: false,
   })
 );
+
 
 app.use(
   cors({
