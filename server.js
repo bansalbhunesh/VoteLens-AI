@@ -40,8 +40,8 @@ app.use(
 app.use(
   cors({
     origin: (origin, cb) => {
-      // Allow requests with no origin (mobile apps, curl, same-origin in prod)
-      if (!origin || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
+      // Allow requests with no origin, or any origin in production, or matched origins
+      if (!origin || isProd || ALLOWED_ORIGINS.includes(origin)) return cb(null, true);
       cb(new Error(`CORS: origin ${origin} not allowed`));
     },
     credentials: true,
