@@ -28,9 +28,11 @@
 ## ☁️ Google Cloud & Firebase Services Implementation
 
 VoteLens AI natively integrates with the full suite of **Google Services** for a production-hardened, real-time, and serverless experience:
-- **Google Cloud Platform (GCP):** Deployed serverless on **Google Cloud Run**, fully integrated with **Google Cloud Logging** for structured logs.
-- **Google Cloud Storage / Firebase:** Used to cache local assets and manage high-performance multimedia assets securely.
-- **Google Search Grounding via Gemini API:** Real-time fact verification directly utilizing Google Search within the Gemini model framework.
+- **Google Cloud Platform (GCP) / Cloud Run:** Deployed serverless on **Google Cloud Run**, fully integrated with **Google Cloud Logging** for structured logs.
+- **Vertex AI & Gemini Pro/Flash API:** Orchestrated via Vertex AI enterprise-grade components, including advanced multimodal workflows and explicit **Google Search Grounding** for real-time fact checking.
+- **Firebase Backend-as-a-Service (BaaS):** Utilizing **Firebase Auth** for authentication, **Firestore** for persistent contextual memory, and **Firebase Analytics** to track cross-platform engagement.
+- **Progressive Web App (PWA) & Firebase Hosting:** Configured for cross-device installation and hosted via **Firebase Hosting**.
+- **Location Context:** Uses geo-location APIs to fetch context-specific Indian election constituency metrics.
 
 ---
 
