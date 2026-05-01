@@ -34,22 +34,22 @@
 
 Every election cycle, billions of citizens are met with a common hurdle: **information overload combined with digital intimidation**. 
 
-```
-┌──────────────────────────────────────────────────────────────┐
-│                  THE CIVIC KNOWLEDGE GAP                    │
-├───────────────────────────────┬──────────────────────────────┤
-│       ❌ The Status Quo       │      ❌ The Generic AI       │
-├───────────────────────────────┼──────────────────────────────┤
-│ • Dense, 100-page manuals     │ • Long, dry text blocks      │
-│ • Menus with buried data      │ • Out-of-date answers        │
-│ • No visual context or demo   │ • Confusing prompt boxes     │
-│ • Hard-to-read voter slips    │ • No cross-screen context    │
-└───────────────────────────────┴──────────────────────────────┘
+```mermaid
+graph TD
+    A["Voter Challenges"] --> B["❌ Dense Manuals"]
+    A --> C["❌ Fake News on WhatsApp"]
+    A --> D["❌ Intimidating Booth Tech"]
+    A --> E["❌ Fragmented Tools"]
+
+    B --> F["Buried, inaccessible rules"]
+    C --> G["Uncertainty on EVM reliability"]
+    D --> H["Fear of casting invalid votes"]
+    E --> I["Friction & hesitation"]
 ```
 
 Voters struggle with:
 1. **Intimidation:** First-time and elderly voters often feel nervous about operating an EVM.
-2. **Disinformation:** Fake news on WhatsApp breeds uncertainty regarding EVM reliability and voter ID requirements.
+2. **Disinformation:** Fake news breeds uncertainty regarding EVM reliability and voter ID requirements.
 3. **Friction:** Finding the right answer to a specific scenario across fragmented tools takes far too much effort.
 
 ---
@@ -58,21 +58,13 @@ Voters struggle with:
 
 **VoteLens AI** addresses these problems with **four distinct interactive pillars**, using **Google Gemini 2.5 Flash** as its foundational intelligence engine.
 
-```
-                  ┌──────────────────────┐
-                  │     VoteLens AI      │
-                  └──────────┬───────────┘
-                             │
-       ┌─────────────────────┼─────────────────────┐
-       ▼                     ▼                     ▼
-┌─────────────┐       ┌─────────────┐       ┌─────────────┐
-│ 🗳️ SIMULATE │       │ 🔍 VERIFY  │       │ 💬 MENTOR   │
-└─────────────┘       └─────────────┘       └─────────────┘
-Walking voters        Visible               Real-time,
-through the           Chain-of-Thought      supportive
-7 polling steps       fact-checking via     conversation
-with a tactile        Google Search         with optional
-virtual EVM.          grounding.            voice input.
+```mermaid
+graph LR
+    User["Citizen Input"] --> AI["VoteLens AI Engine (Gemini 2.5 Flash)"]
+    AI --> Simulate["🗳️ Simulation: Tactile, 7-step booth walkthrough"]
+    AI --> Verify["🔍 Verifier: Real-time rumor debunking"]
+    AI --> Mentor["💬 Mentor: AI-guided supportive chat"]
+    AI --> Quiz["🧠 Quiz: Interactive knowledge check"]
 ```
 
 ---
@@ -111,30 +103,16 @@ The platform senses when a user is pausing or hesitant and offers helpful, conte
 
 VoteLens AI runs as a production-hardened full-stack application within a secure, high-availability architecture.
 
-```
-┌────────────────────────────────────────────────────────┐
-│                      Cloud Run                         │
-│  ┌──────────────────────────────────────────────────┐  │
-│  │               Express.js Backend                 │  │
-│  │                                                  │  │
-│  │  ┌────────────────────────┐  ┌────────────────┐  │  │
-│  │  │ REST / SSE API Routes  │  │ Static Assets  │  │  │
-│  │  │ • /api/verify-stream   │  │ (Vite Build)   │  │  │
-│  │  │ • /api/intent          │  │ • Landing      │  │  │
-│  │  │ • /api/chat            │  │ • Simulation   │  │  │
-│  │  │ • /api/quiz            │  │ • Verify       │  │  │
-│  │  │ • /api/analyze         │  │ • Mentor       │  │  │
-│  │  └───────────┬────────────┘  └────────────────┘  │  │
-│  └──────────────┼───────────────────────────────────┘  │
-│                 │                                      │
-│        ┌────────▼──────────────┐                       │
-│        │   Gemini 2.5 Flash    │                       │
-│        │ • JSON Output Mode    │                       │
-│        │ • Live Search Ground  │                       │
-│        │ • SSE Streaming       │                       │
-│        │ • Multimodal Vision   │                       │
-│        └───────────────────────┘                       │
-└────────────────────────────────────────────────────────┘
+```mermaid
+graph TD
+    Client["Vite SPA Client (React 19)"] --> |"HTTP / SSE Streams"| Backend["Express.js Server (Node 20)"]
+    Backend --> |"Google Search Grounding"| Gemini["Gemini 2.5 Flash API"]
+    Gemini --> |"Structured JSON / Stream"| Backend
+    Backend --> |"Hydrated Responses & Fallbacks"| Client
+
+    subgraph "Hosting Infrastructure on Google Cloud"
+        Backend
+    end
 ```
 
 ---
